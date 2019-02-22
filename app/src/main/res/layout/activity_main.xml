@@ -30,11 +30,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="4dp">
+                android:padding="4dp"
+                android:scrollbars="vertical">
                 <EditText
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:id="@+id/title_submit"
+                    android:minLines="1"
                     android:maxLines="2"
                     android:hint="Enter a Task: To..."
                     android:padding="8dp"
@@ -44,6 +46,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:id="@+id/remark_submit"
+                    android:minLines="2"
                     android:maxLines="5"
                     android:hint="Enter a Remark: Remember..."
                     android:padding="8dp"
@@ -61,19 +64,19 @@
                         android:id="@+id/prod_submit"
                         android:layout_weight="1"
                         android:checked="true"
-                        android:text="Productive Work"/>
+                        android:text="Productive"/>
                     <RadioButton
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:id="@+id/chore_submit"
                         android:layout_weight="1"
-                        android:text="Delegable Chores"/>
+                        android:text="Chores"/>
                     <RadioButton
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:id="@+id/fun_submit"
                         android:layout_weight="1"
-                        android:text="Fun/Pass Time"/>
+                        android:text="Recreation"/>
                 </RadioGroup>
                 <LinearLayout
                     android:layout_width="match_parent"

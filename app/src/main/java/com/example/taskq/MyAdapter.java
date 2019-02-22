@@ -70,6 +70,7 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
             item = dataSet.get(position);
             dataSet.remove(position);
             notifyItemRemoved(position);
+
         }
         catch (Exception e){
             Log.e("Adapter",e.getMessage());
