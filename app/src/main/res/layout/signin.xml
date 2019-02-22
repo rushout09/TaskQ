@@ -1,15 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Click on the button to continue"/>
+        android:text="Welcome to Taskq. Tap on the button to continue."
+        android:layout_above="@id/signinBTN"
+        android:layout_centerInParent="true"/>
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Sign In"
-        android:id="@+id/signinBTN"/>
+        android:text="Sign In / Sign Up"
+        android:layout_centerInParent="true"
+        android:id="@+id/signinBTN"
+        />
 
-</LinearLayout>
+</RelativeLayout>

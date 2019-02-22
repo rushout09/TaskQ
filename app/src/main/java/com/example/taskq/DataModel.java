@@ -1,42 +1,68 @@
 package com.example.taskq;
 
 public class DataModel {
-    private String Title;
-    private String Remark;
-    private String Type;
-    private String Urgency;
-    private String Importance;
-    private String Easiness;
+    private String mTitle;
+    private String mRemark;
+    private String mType;
+    private String mUrgency;
+    private String mImportance;
+    private String mEasiness;
+
+    public DataModel(){}
     public DataModel(String Title, String Remark,String Type, String Urgency, String Importance, String Easiness){
-        this.Title = Title;
-        this.Remark = Remark;
-        this.Type = Type;
-        this.Urgency = Urgency;
-        this.Importance = Importance;
-        this.Easiness = Easiness;
+        mTitle = Title;
+        mRemark = Remark;
+        mType = Type;
+        mUrgency = Urgency;
+        mImportance = Importance;
+        mEasiness = Easiness;
     }
 
     public String getTitle() {
-        return Title;
+        return mTitle;
     }
 
     public String getRemark() {
-        return Remark;
+        return mRemark;
     }
 
     public String getType() {
-        return Type;
+        return mType;
     }
 
     public String getUrgency() {
-        return Urgency;
+        return mUrgency;
     }
 
     public String getImportance() {
-        return Importance;
+        return mImportance;
     }
 
     public String getEasiness() {
-        return Easiness;
+        return mEasiness;
+    }
+
+    public void setTitle(String Title) {
+        mTitle = Title;
+    }
+
+    public void setEasiness(String mEasiness) {
+        this.mEasiness = mEasiness;
+    }
+
+    public void setImportance(String Importance) {
+        mImportance = Importance;
+    }
+
+    public void setRemark(String Remark) {
+        mRemark = Remark;
+    }
+
+    public void setType(String Type) {
+        mType = Type;
+    }
+
+    public void setUrgency(String Urgency) {
+        mUrgency = Urgency;
     }
 }

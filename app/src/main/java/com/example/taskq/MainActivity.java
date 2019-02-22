@@ -2,9 +2,10 @@ package com.example.taskq;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.support.annotation.Nullable;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
@@ -15,6 +16,9 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -26,15 +30,19 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
-import com.firebase.ui.auth.IdpResponse;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
+
+
 
 public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
@@ -52,8 +60,8 @@ public class MainActivity extends AppCompatActivity {
     private SeekBar Easiness;
     private FloatingActionButton AddTask;
     private FirebaseUser user;
-
-
+    SharedPreferences shref;
+    InputMethodManager imm;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -75,12 +83,19 @@ public class MainActivity extends AppCompatActivity {
             Easiness = (SeekBar)findViewById(R.id.easy_submit);
             AddTask = (FloatingActionButton) findViewById(R.id.add_task);
             textView = (TextView)findViewById(R.id.tv_main);
+            user = FirebaseAuth.getInstance().getCurrentUser();
+            //recyclerView.setHasFixedSize(true)
 
-            //recyclerView.setHasFixedSize(true);
-
-            myDataset = new ArrayList<>();
-            if(myDataset.isEmpty()){
-                listEmpty();
+            shref = getApplicationContext().getSharedPreferences("tasks",Context.MODE_PRIVATE);
+            Gson gson = new Gson();
+            String response=shref.getString(user.getUid(),"");
+            myDataset = gson.fromJson(response, new TypeToken<ArrayList<DataModel> >(){}.getType());
+            if(myDataset==null){
+                myDataset = new ArrayList<>();
+                textView.setVisibility(View.VISIBLE);
+            }
+            else{
+                textView.setVisibility(View.GONE);
             }
 
 
@@ -163,13 +178,7 @@ public class MainActivity extends AppCompatActivity {
                     submitTask();
                     buttonVisible();
                     textView.setVisibility(View.GONE);
-                    InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-                    try {
-                        imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(),0);
-                    }
-                    catch (Exception e){
-                        Log.e("MainActivity",e.getMessage());
-                    }
+
                 }
             });
 
@@ -220,11 +229,26 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     protected void cardVisible(){
-        cardView.setVisibility(View.VISIBLE);
         AddTask.hide();
+        imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+        try {
+            Title.requestFocus();
+            imm.showSoftInput(Title,0);
+        }
+        catch (Exception e){
+            Log.e("MainActivity",e.getMessage());
+        }
+        cardView.setVisibility(View.VISIBLE);
     }
     protected void buttonVisible(){
         cardView.setVisibility(View.GONE);
+        imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+        try {
+            imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(),0);
+        }
+        catch (Exception e){
+            Log.e("MainActivity",e.getMessage());
+        }
         AddTask.show();
     }
     @Override
@@ -235,10 +259,40 @@ public class MainActivity extends AppCompatActivity {
             super.onBackPressed();
     }
 
-    protected void listEmpty(){
-        textView.setVisibility(View.VISIBLE);
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater=new MenuInflater(this);
+        inflater.inflate(R.menu.main,menu);
+        return true;
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()){
+            case R.id.sign_out:
+            AuthUI.getInstance()
+                    .signOut(this)
+                    .addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                            Intent intent = new Intent(MainActivity.this,SignInActivity.class);
+                            startActivity(intent);
+                            finish();
+                        }
+                    });
+        }
+        return true;
+    }
 
-
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Gson gson = new Gson();
+        shref = getApplicationContext().getSharedPreferences("tasks",Context.MODE_PRIVATE);
+        String json = gson.toJson(myDataset);
+        SharedPreferences.Editor editor = shref.edit();
+        editor.remove(user.getUid()).apply();
+        editor.putString(user.getUid(),json);
+        editor.commit();
+    }
 }

@@ -1,20 +1,17 @@
 package com.example.taskq;
 
-import android.app.Activity;
 import android.support.annotation.NonNull;
-import android.support.design.widget.Snackbar;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import java.util.ArrayList;
 
-import static java.security.AccessController.getContext;
+
 
 public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     private ArrayList<DataModel> dataSet;
@@ -70,7 +67,6 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
             item = dataSet.get(position);
             dataSet.remove(position);
             notifyItemRemoved(position);
-
         }
         catch (Exception e){
             Log.e("Adapter",e.getMessage());
