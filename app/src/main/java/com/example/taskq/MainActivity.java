@@ -5,12 +5,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -23,7 +23,6 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -36,7 +35,6 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
     private SeekBar Easiness;
     private FloatingActionButton AddTask;
     private FirebaseUser user;
+    private int mPos;
     SharedPreferences shref;
     InputMethodManager imm;
     @Override
@@ -72,17 +71,19 @@ public class MainActivity extends AppCompatActivity {
             finish();
         }
         else{
-            recyclerView = (RecyclerView)findViewById(R.id.recycler_view);
-            cardView = (CardView)findViewById(R.id.cardview_main);
-            SubmitButton = (Button)findViewById(R.id.task_submit);
-            Title = (EditText)findViewById(R.id.title_submit);
-            Remark = (EditText)findViewById(R.id.remark_submit);
-            Type = (RadioGroup)findViewById(R.id.typeRG_submit);
-            Urgency = (SeekBar)findViewById(R.id.urgent_submit);
-            Importance = (SeekBar)findViewById(R.id.imp_submit);
-            Easiness = (SeekBar)findViewById(R.id.easy_submit);
-            AddTask = (FloatingActionButton) findViewById(R.id.add_task);
-            textView = (TextView)findViewById(R.id.tv_main);
+            recyclerView = findViewById(R.id.recycler_view);
+            cardView = findViewById(R.id.cardview_main);
+            SubmitButton = findViewById(R.id.task_submit);
+            Title = findViewById(R.id.title_submit);
+            Remark = findViewById(R.id.remark_submit);
+            Type = findViewById(R.id.typeRG_submit);
+            mPos = -1;
+
+            Urgency = findViewById(R.id.urgent_submit);
+            Importance = findViewById(R.id.imp_submit);
+            Easiness = findViewById(R.id.easy_submit);
+            AddTask = findViewById(R.id.add_task);
+            textView = findViewById(R.id.tv_main);
             user = FirebaseAuth.getInstance().getCurrentUser();
             //recyclerView.setHasFixedSize(true)
 
@@ -164,18 +165,27 @@ public class MainActivity extends AppCompatActivity {
             itemTouchHelper.attachToRecyclerView(recyclerView);
 
 
+            mAdapter.setOnItemClickListener(new MyAdapter.ClickListener() {
+                @Override
+                public void onItemClick(int position, View v) {
+                    mPos = position;
+                    cardVisible(position);
+                }
 
-
+                @Override
+                public void onItemLongClick(int position, View v) {
+                }
+            });
             AddTask.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    cardVisible();
+                    cardVisible(mPos);
                 }
             });
             SubmitButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    submitTask();
+                    submitTask(mPos);
                     buttonVisible();
                     textView.setVisibility(View.GONE);
 
@@ -185,7 +195,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
-    protected void submitTask(){
+
+    protected void submitTask(int position) {
         String titleStr = Title.getText().toString();
         if(titleStr.isEmpty()){
             Toast.makeText(this,"Empty Title!",Toast.LENGTH_SHORT).show();
@@ -193,12 +204,15 @@ public class MainActivity extends AppCompatActivity {
         else{
             String remarkStr = Remark.getText().toString();
             int id = Type.getCheckedRadioButtonId();
-            RadioButton rb = (RadioButton)findViewById(id);
-            String typeStr = rb.getText().toString();
-            final String urgStr = String.valueOf(Urgency.getProgress());
+            String typeStr = String.valueOf(id);
+            String urgStr = String.valueOf(Urgency.getProgress());
             String impStr = String.valueOf(Importance.getProgress());
             String easeStr = String.valueOf(Easiness.getProgress());
             DataModel e = new DataModel(titleStr,remarkStr,typeStr,urgStr,impStr,easeStr);
+            if (position != -1) {
+                mAdapter.removeItem(position);
+                mPos = -1;
+            }
             myDataset.add(e);
             Collections.sort(myDataset, new Comparator<DataModel>() {
                 @Override
@@ -222,24 +236,38 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             });
+
             mAdapter.notifyDataSetChanged();
             Title.setText("");
             Remark.setText("");
             Toast.makeText(this,"Task Added!",Toast.LENGTH_SHORT).show();
         }
     }
-    protected void cardVisible(){
+
+    protected void cardVisible(int position) {
         AddTask.hide();
+        if (position != -1) {
+            Title.setText(myDataset.get(position).getTitle());
+            Remark.setText(myDataset.get(position).getRemark());
+            Type.check(Integer.parseInt(myDataset.get(position).getType()));
+            Easiness.setProgress(Integer.parseInt(myDataset.get(position).getEasiness()));
+            Urgency.setProgress(Integer.parseInt(myDataset.get(position).getUrgency()));
+            Importance.setProgress(Integer.parseInt(myDataset.get(position).getImportance()));
+        } else {
+            Title.setText("");
+            Remark.setText("");
+            Type.check(R.id.prod_submit);
+            Easiness.setProgress(0);
+            Urgency.setProgress(0);
+            Importance.setProgress(0);
+
+        }
+        Title.requestFocus();
         imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-        try {
-            Title.requestFocus();
-            imm.showSoftInput(Title,0);
-        }
-        catch (Exception e){
-            Log.e("MainActivity",e.getMessage());
-        }
+        imm.showSoftInput(Title, 0);
         cardView.setVisibility(View.VISIBLE);
     }
+
     protected void buttonVisible(){
         cardView.setVisibility(View.GONE);
         imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -253,8 +281,10 @@ public class MainActivity extends AppCompatActivity {
     }
     @Override
     public void onBackPressed(){
-        if(cardView.getVisibility()==View.VISIBLE)
+        if (cardView.getVisibility() == View.VISIBLE) {
             buttonVisible();
+            mPos = -1;
+        }
         else
             super.onBackPressed();
     }
@@ -296,3 +326,5 @@ public class MainActivity extends AppCompatActivity {
         editor.commit();
     }
 }
+
+

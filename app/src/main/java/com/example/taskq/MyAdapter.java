@@ -15,18 +15,44 @@ import java.util.ArrayList;
 
 public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     private ArrayList<DataModel> dataSet;
+    private static ClickListener clickListener;
 
-    protected static class MyViewHolder extends RecyclerView.ViewHolder{
+    public void setOnItemClickListener(ClickListener clickListener) {
+        MyAdapter.clickListener = clickListener;
+    }
+
+    public interface ClickListener {
+        void onItemClick(int position, View v);
+
+        void onItemLongClick(int position, View v);
+    }
+
+    protected static class MyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
         protected TextView titleView;
         protected TextView remarkView;
         protected CardView cardView;
 
         protected MyViewHolder(View view){
             super(view);
-            this.titleView = (TextView)view.findViewById(R.id.title_view);
-            this.remarkView = (TextView)view.findViewById(R.id.remark_view);
-            this.cardView = (CardView)view.findViewById(R.id.cardview);
+            view.setOnClickListener(this);
+            view.setOnLongClickListener(this);
+            this.titleView = view.findViewById(R.id.title_view);
+            this.remarkView = view.findViewById(R.id.remark_view);
+            this.cardView = view.findViewById(R.id.cardview);
+
         }
+
+        @Override
+        public void onClick(View view) {
+            clickListener.onItemClick(getAdapterPosition(), view);
+        }
+
+        @Override
+        public boolean onLongClick(View view) {
+            clickListener.onItemLongClick(getAdapterPosition(), view);
+            return false;
+        }
+
     }
     public MyAdapter(ArrayList<DataModel> dataSet){
         this.dataSet = dataSet;
@@ -73,4 +99,5 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
         }
         return item;
     }
+
 }
