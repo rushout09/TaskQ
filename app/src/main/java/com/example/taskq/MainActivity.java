@@ -1,5 +1,7 @@
 package com.example.taskq;
 
+import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -22,10 +24,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
@@ -36,10 +41,12 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
-
+import java.util.Locale;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -53,14 +60,21 @@ public class MainActivity extends AppCompatActivity {
     private EditText Title;
     private EditText Remark;
     private RadioGroup Type;
-    private SeekBar Urgency;
     private SeekBar Importance;
-    private SeekBar Easiness;
     private FloatingActionButton AddTask;
     private FirebaseUser user;
+    private RadioGroup Repeated;
+    private RadioGroup OnceRG;
+    private LinearLayout OnceLL;
+    private TextView OnceTV;
+    private EditText DateET;
+    private EditText TimeET;
+    private Calendar calendar;
     private int mPos;
     SharedPreferences shref;
     InputMethodManager imm;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,11 +91,67 @@ public class MainActivity extends AppCompatActivity {
             Title = findViewById(R.id.title_submit);
             Remark = findViewById(R.id.remark_submit);
             Type = findViewById(R.id.typeRG_submit);
+            Repeated = findViewById(R.id.repeatRG_submit);
+            OnceRG = findViewById(R.id.onceRG_submit);
+            DateET = findViewById(R.id.date_ET);
+            TimeET = findViewById(R.id.time_ET);
+            OnceTV = findViewById(R.id.once_tv);
+            OnceLL = findViewById(R.id.once_ll);
             mPos = -1;
+            calendar = Calendar.getInstance();
 
-            Urgency = findViewById(R.id.urgent_submit);
+            final TimePickerDialog.OnTimeSetListener time = new TimePickerDialog.OnTimeSetListener() {
+                @Override
+                public void onTimeSet(TimePicker timePicker, int hour, int min) {
+                    calendar.set(Calendar.HOUR, hour);
+                    calendar.set(Calendar.MINUTE, min);
+                    updateTime(hour, min);
+                }
+            };
+
+            final DatePickerDialog.OnDateSetListener date = new DatePickerDialog.OnDateSetListener() {
+                @Override
+                public void onDateSet(DatePicker datePicker, int year, int month, int day) {
+                    calendar.set(Calendar.YEAR, year);
+                    calendar.set(Calendar.MONTH, month);
+                    calendar.set(Calendar.DAY_OF_MONTH, day);
+                    updateDate(year, month, day);
+                }
+            };
+
+            TimeET.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    TimePickerDialog tpd = new TimePickerDialog(MainActivity.this, time, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true);
+                    tpd.show();
+                }
+            });
+            DateET.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    DatePickerDialog dpd = new DatePickerDialog(MainActivity.this, date,
+                            calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH));
+                    dpd.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
+                    dpd.show();
+
+                }
+            });
+
+            Repeated.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(RadioGroup radioGroup, int i) {
+                    if (i == R.id.once_rd) {
+                        OnceTV.setVisibility(View.VISIBLE);
+                        OnceLL.setVisibility(View.VISIBLE);
+                    } else {
+                        OnceTV.setVisibility(View.GONE);
+                        OnceLL.setVisibility(View.GONE);
+                    }
+                }
+            });
+
+
             Importance = findViewById(R.id.imp_submit);
-            Easiness = findViewById(R.id.easy_submit);
             AddTask = findViewById(R.id.add_task);
             textView = findViewById(R.id.tv_main);
             user = FirebaseAuth.getInstance().getCurrentUser();
@@ -205,10 +275,10 @@ public class MainActivity extends AppCompatActivity {
             String remarkStr = Remark.getText().toString();
             int id = Type.getCheckedRadioButtonId();
             String typeStr = String.valueOf(id);
-            String urgStr = String.valueOf(Urgency.getProgress());
+            //String urgStr = String.valueOf(Urgency.getProgress());
             String impStr = String.valueOf(Importance.getProgress());
-            String easeStr = String.valueOf(Easiness.getProgress());
-            DataModel e = new DataModel(titleStr,remarkStr,typeStr,urgStr,impStr,easeStr);
+            // String easeStr = String.valueOf(Easiness.getProgress());
+            DataModel e = new DataModel(titleStr, remarkStr, typeStr, impStr);
             if (position != -1) {
                 mAdapter.removeItem(position);
                 mPos = -1;
@@ -217,22 +287,16 @@ public class MainActivity extends AppCompatActivity {
             Collections.sort(myDataset, new Comparator<DataModel>() {
                 @Override
                 public int compare(DataModel left, DataModel right) {
-                    int leftUrg = Integer.parseInt(left.getUrgency());
                     int leftImp = Integer.parseInt(left.getImportance());
-                    int leftEase = Integer.parseInt(left.getEasiness());
-                    int rightUrg = Integer.parseInt(right.getUrgency());
+
                     int rightImp = Integer.parseInt(right.getImportance());
-                    int rightEase = Integer.parseInt(right.getEasiness());
-                    if(leftUrg>rightUrg) return -1;
-                    else if(leftUrg<rightUrg) return 1;
-                    else{
-                        if(leftImp>rightImp) return -1;
-                        else if(leftImp<rightImp) return 1;
-                        else{
-                            if(leftEase>rightEase) return -1;
-                            else if(leftEase<rightEase) return 1;
-                            return 0;
-                        }
+
+
+                    if (leftImp > rightImp) return -1;
+                    else if (leftImp < rightImp) return 1;
+                    else {
+
+                        return 0;
                     }
                 }
             });
@@ -246,25 +310,21 @@ public class MainActivity extends AppCompatActivity {
 
     protected void cardVisible(int position) {
         AddTask.hide();
+        calendar = Calendar.getInstance();
         if (position != -1) {
             Title.setText(myDataset.get(position).getTitle());
             Remark.setText(myDataset.get(position).getRemark());
             Type.check(Integer.parseInt(myDataset.get(position).getType()));
-            Easiness.setProgress(Integer.parseInt(myDataset.get(position).getEasiness()));
-            Urgency.setProgress(Integer.parseInt(myDataset.get(position).getUrgency()));
             Importance.setProgress(Integer.parseInt(myDataset.get(position).getImportance()));
         } else {
             Title.setText("");
             Remark.setText("");
             Type.check(R.id.prod_submit);
-            Easiness.setProgress(0);
-            Urgency.setProgress(0);
             Importance.setProgress(0);
-
+            Title.requestFocus();
+            imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.showSoftInput(Title, 0);
         }
-        Title.requestFocus();
-        imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.showSoftInput(Title, 0);
         cardView.setVisibility(View.VISIBLE);
     }
 
@@ -324,6 +384,17 @@ public class MainActivity extends AppCompatActivity {
         editor.remove(user.getUid()).apply();
         editor.putString(user.getUid(),json);
         editor.commit();
+    }
+
+    protected void updateDate(int year, int month, int day) {
+        String myFormat = "dd/MM/yy";
+        SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.US);
+        DateET.setText(sdf.format(calendar.getTime()));
+    }
+
+    protected void updateTime(int hour, int min) {
+        TimeET.setText(String.format(Locale.getDefault(), "%02d:%02d Hrs", hour, min));
+
     }
 }
 
