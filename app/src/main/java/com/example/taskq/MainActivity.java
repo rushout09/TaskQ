@@ -1,7 +1,6 @@
 package com.example.taskq;
 
 import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -23,14 +22,17 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.TimePicker;
 import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
@@ -49,10 +51,10 @@ import java.util.Comparator;
 import java.util.Locale;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
     private RecyclerView recyclerView;
     private CardView cardView;
-    protected TextView textView;
+    protected TextView MainHintTV;
     private MyAdapter mAdapter;
     private RecyclerView.LayoutManager layoutManager;
     private ArrayList<DataModel> myDataset;
@@ -63,12 +65,12 @@ public class MainActivity extends AppCompatActivity {
     private SeekBar Importance;
     private FloatingActionButton AddTask;
     private FirebaseUser user;
-    private RadioGroup Repeated;
-    private RadioGroup OnceRG;
-    private LinearLayout OnceLL;
-    private TextView OnceTV;
+    private RadioGroup Repeat_RG;
+    private RadioGroup OnByRG;
+    private LinearLayout DatetimeLL;
     private EditText DateET;
-    private EditText TimeET;
+    private Spinner TimeSpinner;
+    private Spinner WeekSpinner;
     private Calendar calendar;
     private int mPos;
     SharedPreferences shref;
@@ -91,23 +93,18 @@ public class MainActivity extends AppCompatActivity {
             Title = findViewById(R.id.title_submit);
             Remark = findViewById(R.id.remark_submit);
             Type = findViewById(R.id.typeRG_submit);
-            Repeated = findViewById(R.id.repeatRG_submit);
-            OnceRG = findViewById(R.id.onceRG_submit);
+            Repeat_RG = findViewById(R.id.repeat_RG);
+            OnByRG = findViewById(R.id.onby_RG);
             DateET = findViewById(R.id.date_ET);
-            TimeET = findViewById(R.id.time_ET);
-            OnceTV = findViewById(R.id.once_tv);
-            OnceLL = findViewById(R.id.once_ll);
-            mPos = -1;
-            calendar = Calendar.getInstance();
+            TimeSpinner = findViewById(R.id.time_Spinner);
+            WeekSpinner = findViewById(R.id.weekday_Spinner);
+            DatetimeLL = findViewById(R.id.datetime_LL);
+            Importance = findViewById(R.id.imp_submit);
+            AddTask = findViewById(R.id.add_task);
+            MainHintTV = findViewById(R.id.tv_main);
+            user = FirebaseAuth.getInstance().getCurrentUser();
 
-            final TimePickerDialog.OnTimeSetListener time = new TimePickerDialog.OnTimeSetListener() {
-                @Override
-                public void onTimeSet(TimePicker timePicker, int hour, int min) {
-                    calendar.set(Calendar.HOUR, hour);
-                    calendar.set(Calendar.MINUTE, min);
-                    updateTime(hour, min);
-                }
-            };
+            mPos = -1;
 
             final DatePickerDialog.OnDateSetListener date = new DatePickerDialog.OnDateSetListener() {
                 @Override
@@ -119,16 +116,10 @@ public class MainActivity extends AppCompatActivity {
                 }
             };
 
-            TimeET.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    TimePickerDialog tpd = new TimePickerDialog(MainActivity.this, time, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true);
-                    tpd.show();
-                }
-            });
             DateET.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
+                    calendar = Calendar.getInstance();
                     DatePickerDialog dpd = new DatePickerDialog(MainActivity.this, date,
                             calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH));
                     dpd.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
@@ -137,24 +128,38 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
-            Repeated.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            ArrayAdapter<CharSequence> timeAdapter = ArrayAdapter.createFromResource(this, R.array.time_array, android.R.layout.simple_spinner_item);
+            timeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            TimeSpinner.setAdapter(timeAdapter);
+            TimeSpinner.setOnItemSelectedListener(this);
+
+            ArrayAdapter<CharSequence> weekAdapter = ArrayAdapter.createFromResource(this, R.array.week_array, android.R.layout.simple_spinner_item);
+            weekAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            WeekSpinner.setAdapter(weekAdapter);
+            WeekSpinner.setOnItemSelectedListener(this);
+
+
+            Repeat_RG.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(RadioGroup radioGroup, int i) {
-                    if (i == R.id.once_rd) {
-                        OnceTV.setVisibility(View.VISIBLE);
-                        OnceLL.setVisibility(View.VISIBLE);
-                    } else {
-                        OnceTV.setVisibility(View.GONE);
-                        OnceLL.setVisibility(View.GONE);
+                    if (i == R.id.once_RB) {
+                        OnByRG.setVisibility(View.VISIBLE);
+                        DateET.setVisibility(View.VISIBLE);
+                        WeekSpinner.setVisibility(View.GONE);
+                        TimeSpinner.setVisibility(View.VISIBLE);
+                    } else if (i == R.id.daily_RB) {
+                        OnByRG.setVisibility(View.GONE);
+                        DateET.setVisibility(View.GONE);
+                        WeekSpinner.setVisibility(View.GONE);
+                        TimeSpinner.setVisibility(View.VISIBLE);
+                    } else if (i == R.id.weekly_RB) {
+                        DateET.setVisibility(View.GONE);
+                        OnByRG.setVisibility(View.VISIBLE);
+                        WeekSpinner.setVisibility(View.VISIBLE);
+                        TimeSpinner.setVisibility(View.VISIBLE);
                     }
                 }
             });
-
-
-            Importance = findViewById(R.id.imp_submit);
-            AddTask = findViewById(R.id.add_task);
-            textView = findViewById(R.id.tv_main);
-            user = FirebaseAuth.getInstance().getCurrentUser();
             //recyclerView.setHasFixedSize(true)
 
             shref = getApplicationContext().getSharedPreferences("tasks",Context.MODE_PRIVATE);
@@ -163,12 +168,11 @@ public class MainActivity extends AppCompatActivity {
             myDataset = gson.fromJson(response, new TypeToken<ArrayList<DataModel> >(){}.getType());
             if(myDataset==null){
                 myDataset = new ArrayList<>();
-                textView.setVisibility(View.VISIBLE);
+                MainHintTV.setVisibility(View.VISIBLE);
             }
             else{
-                textView.setVisibility(View.GONE);
+                MainHintTV.setVisibility(View.GONE);
             }
-
 
             layoutManager = new LinearLayoutManager(this);
             recyclerView.setLayoutManager(layoutManager);
@@ -205,27 +209,16 @@ public class MainActivity extends AppCompatActivity {
                 public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive){
 
                     new RecyclerViewSwipeDecorator.Builder(MainActivity.this, c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
-
                             .addSwipeLeftBackgroundColor(ContextCompat.getColor(MainActivity.this, R.color.recycler_view_item_swipe_left_background))
-
                             .addSwipeLeftActionIcon(R.drawable.ic_archive_white_24dp)
-
                             .addSwipeRightBackgroundColor(ContextCompat.getColor(MainActivity.this, R.color.recycler_view_item_swipe_right_background))
-
                             .addSwipeRightActionIcon(R.drawable.ic_delete_sweep_white_24dp)
-
                             .addSwipeRightLabel("Delete")
-
                             .setSwipeRightLabelColor(Color.WHITE)
-
                             .addSwipeLeftLabel("Done!")
-
                             .setSwipeLeftLabelColor(Color.WHITE)
-
                             .create()
-
                             .decorate();
-
                     super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
 
                 }
@@ -233,7 +226,6 @@ public class MainActivity extends AppCompatActivity {
 
             ItemTouchHelper itemTouchHelper = new ItemTouchHelper(callback);
             itemTouchHelper.attachToRecyclerView(recyclerView);
-
 
             mAdapter.setOnItemClickListener(new MyAdapter.ClickListener() {
                 @Override
@@ -246,6 +238,7 @@ public class MainActivity extends AppCompatActivity {
                 public void onItemLongClick(int position, View v) {
                 }
             });
+
             AddTask.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -257,13 +250,12 @@ public class MainActivity extends AppCompatActivity {
                 public void onClick(View view) {
                     submitTask(mPos);
                     buttonVisible();
-                    textView.setVisibility(View.GONE);
+                    MainHintTV.setVisibility(View.GONE);
 
                 }
             });
 
         }
-
     }
 
     protected void submitTask(int position) {
@@ -273,12 +265,22 @@ public class MainActivity extends AppCompatActivity {
         }
         else{
             String remarkStr = Remark.getText().toString();
-            int id = Type.getCheckedRadioButtonId();
-            String typeStr = String.valueOf(id);
-            //String urgStr = String.valueOf(Urgency.getProgress());
+
+            String TypeInt = String.valueOf(Type.getCheckedRadioButtonId());
+            String RepeatInt = String.valueOf(Repeat_RG.getCheckedRadioButtonId());
+            String OnbyInt = String.valueOf(OnByRG.getCheckedRadioButtonId());
+            RadioButton rb = findViewById(Type.getCheckedRadioButtonId());
+            String TypeStr = rb.getText().toString();
+            rb = findViewById(Repeat_RG.getCheckedRadioButtonId());
+            String RepeatStr = rb.getText().toString();
+            rb = findViewById(OnByRG.getCheckedRadioButtonId());
+            String OnbyStr = rb.getText().toString();
+            String dateStr = DateET.getText().toString();
+            String dayStr = String.valueOf(WeekSpinner.getSelectedItemPosition());
+            String timeStr = String.valueOf(TimeSpinner.getSelectedItemPosition());
+
             String impStr = String.valueOf(Importance.getProgress());
-            // String easeStr = String.valueOf(Easiness.getProgress());
-            DataModel e = new DataModel(titleStr, remarkStr, typeStr, impStr);
+            DataModel e = new DataModel(titleStr, remarkStr, TypeStr, RepeatStr, OnbyStr, dateStr, dayStr, timeStr, impStr, TypeInt, RepeatInt, OnbyInt);
             if (position != -1) {
                 mAdapter.removeItem(position);
                 mPos = -1;
@@ -314,20 +316,32 @@ public class MainActivity extends AppCompatActivity {
         if (position != -1) {
             Title.setText(myDataset.get(position).getTitle());
             Remark.setText(myDataset.get(position).getRemark());
-            Type.check(Integer.parseInt(myDataset.get(position).getType()));
+            Type.check(Integer.parseInt(myDataset.get(position).getTaskid()));
+            if (myDataset.get(position).getRepeatid() != null)
+                Repeat_RG.check(Integer.parseInt(myDataset.get(position).getRepeatid()));
+            if (myDataset.get(position).getOnbyid() != null)
+                OnByRG.check(Integer.parseInt(myDataset.get(position).getOnbyid()));
+            DateET.setText(myDataset.get(position).getTargetdate());
+            WeekSpinner.setSelection(Integer.parseInt(myDataset.get(position).getTargetday()), true);
+            TimeSpinner.setSelection(Integer.parseInt(myDataset.get(position).getTargettime()), true);
             Importance.setProgress(Integer.parseInt(myDataset.get(position).getImportance()));
+
         } else {
             Title.setText("");
             Remark.setText("");
             Type.check(R.id.prod_submit);
             Importance.setProgress(0);
+            Repeat_RG.check(R.id.once_RB);
+            OnByRG.check(R.id.on_submit);
+            DateET.setText("Date");
+            WeekSpinner.setSelection(0, true);
+            TimeSpinner.setSelection(0, true);
             Title.requestFocus();
             imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.showSoftInput(Title, 0);
         }
         cardView.setVisibility(View.VISIBLE);
     }
-
     protected void buttonVisible(){
         cardView.setVisibility(View.GONE);
         imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -348,14 +362,12 @@ public class MainActivity extends AppCompatActivity {
         else
             super.onBackPressed();
     }
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater=new MenuInflater(this);
         inflater.inflate(R.menu.main,menu);
         return true;
     }
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()){
@@ -373,7 +385,6 @@ public class MainActivity extends AppCompatActivity {
         }
         return true;
     }
-
     @Override
     protected void onPause() {
         super.onPause();
@@ -385,16 +396,18 @@ public class MainActivity extends AppCompatActivity {
         editor.putString(user.getUid(),json);
         editor.commit();
     }
-
     protected void updateDate(int year, int month, int day) {
         String myFormat = "dd/MM/yy";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.US);
         DateET.setText(sdf.format(calendar.getTime()));
     }
 
-    protected void updateTime(int hour, int min) {
-        TimeET.setText(String.format(Locale.getDefault(), "%02d:%02d Hrs", hour, min));
+    @Override
+    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+    }
 
+    @Override
+    public void onNothingSelected(AdapterView<?> adapterView) {
     }
 }
 
