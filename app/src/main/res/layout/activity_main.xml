@@ -138,55 +138,31 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:padding="8dp">
-                    <RadioGroup
-                        android:id="@+id/onby_RG"
-                        android:layout_height="wrap_content"
-                        android:layout_width="0dp"
-                        android:layout_weight="2"
-                        android:orientation="horizontal">
-                        <RadioButton
-                            android:id="@+id/on_submit"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:checked="true"
-                            android:text="On" />
-                        <RadioButton
-                            android:id="@+id/before_submit"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="By" />
-                    </RadioGroup>
                     <EditText
                         android:id="@+id/date_ET"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
-                        android:layout_weight="2"
+                        android:layout_weight="1"
                         android:clickable="true"
                         android:focusable="false"
                         android:background="@color/fui_transparent"
                         android:longClickable="false"
                         android:padding="4dp"
-                        android:text="Date"
+                        android:text="On Date"
                         android:textAlignment="center" />
 
-                    <Spinner
-                        android:id="@+id/weekday_Spinner"
+                    <EditText
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
-                        android:layout_weight="2"
+                        android:id="@+id/time_ET"
+                        android:layout_weight="1"
                         android:padding="4dp"
-                        android:textAlignment="center"
-                        android:visibility="gone"></Spinner>
-
-                    <Spinner
-                        android:layout_width="0dp"
-                        android:id="@+id/time_Spinner"
-                        android:layout_height="match_parent"
-                        android:layout_weight="2"
-                        android:padding="4dp"
-                        android:textAlignment="center"></Spinner>
+                        android:background="@color/fui_transparent"
+                        android:clickable="true"
+                        android:focusable="false"
+                        android:longClickable="false"
+                        android:text="At Time"
+                        android:textAlignment="center" />
                 </LinearLayout>
 
                 <LinearLayout

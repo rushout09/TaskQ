@@ -23,7 +23,7 @@ public class SignInActivity extends AppCompatActivity{
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.signin);
-        btn = (Button)findViewById(R.id.signinBTN);
+        btn = findViewById(R.id.signinBTN);
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
