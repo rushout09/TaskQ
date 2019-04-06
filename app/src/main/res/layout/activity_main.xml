@@ -148,20 +148,20 @@
                         android:background="@color/fui_transparent"
                         android:longClickable="false"
                         android:padding="4dp"
-                        android:text="On Date"
+                        android:text="Before Date"
                         android:textAlignment="center" />
 
                     <EditText
+                        android:id="@+id/time_ET"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
-                        android:id="@+id/time_ET"
                         android:layout_weight="1"
-                        android:padding="4dp"
                         android:background="@color/fui_transparent"
                         android:clickable="true"
                         android:focusable="false"
                         android:longClickable="false"
-                        android:text="At Time"
+                        android:padding="4dp"
+                        android:text="And Time"
                         android:textAlignment="center" />
                 </LinearLayout>
 

@@ -15,7 +15,6 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.Locale;
 
 
@@ -37,9 +36,9 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     public void onBindViewHolder(@NonNull MyAdapter.MyViewHolder holder, int position) {
         holder.titleView.setText(dataSet.get(position).getTitle());
         holder.remarkView.setText(dataSet.get(position).getRemark());
-        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/YY hh:mm", Locale.getDefault());
+        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/YY hh:mm a", Locale.getDefault());
         String datestr = formatter.format(new Date(Long.parseLong(dataSet.get(position).getTargetTimestamp())));
-        holder.datetimeView.setText(datestr);
+        holder.datetimeView.setText("By " + datestr);
     }
     public MyAdapter(ArrayList<DataModel> dataSet){
         this.dataSet = dataSet;
@@ -76,12 +75,23 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
             dataSet.remove(position);
             notifyItemRemoved(position);
             if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
-                Calendar calendar = new GregorianCalendar();
-                item.setInitialTimestamp(String.valueOf(calendar.getTimeInMillis()));
+                Calendar calendar = Calendar.getInstance();
                 if (item.getRepeat().compareToIgnoreCase("Daily") == 0) {
-                    calendar.add(Calendar.DAY_OF_MONTH, 1);
+                    calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+                    calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
+                    calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1);
+                    calendar.set(Calendar.HOUR, 0);
+                    calendar.set(Calendar.MINUTE, 0);
+                    calendar.set(Calendar.SECOND, 0);
+                    calendar.set(Calendar.MILLISECOND, 0);
                 } else if (item.getRepeat().compareToIgnoreCase("Weekly") == 0) {
-                    calendar.add(Calendar.DAY_OF_MONTH, 7);
+                    calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+                    calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
+                    calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 7);
+                    calendar.set(Calendar.HOUR, 0);
+                    calendar.set(Calendar.MINUTE, 0);
+                    calendar.set(Calendar.SECOND, 0);
+                    calendar.set(Calendar.MILLISECOND, 0);
                 }
                 item.setTargetTimestamp(String.valueOf(calendar.getTimeInMillis()));
                 dataSet.add(item);
@@ -112,33 +122,20 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
             @Override
             public int compare(DataModel left, DataModel right) {
                 long leftTarTime = Long.parseLong(left.getTargetTimestamp());
-                long rightTarTime = Long.parseLong(left.getTargetTimestamp());
-                long leftIniTime = Long.parseLong(left.getInitialTimestamp());
-                long rightIniTime = Long.parseLong(left.getInitialTimestamp());
-                long currTime = Calendar.getInstance().getTimeInMillis();
-                float leftUrgency;
-                if (leftTarTime < leftIniTime || leftTarTime < currTime)
-                    leftUrgency = 100;
-                else
-                    leftUrgency = 100 - ((float) ((leftTarTime - currTime) / (leftTarTime - leftIniTime)) * 100);
-                leftUrgency = Math.round(leftUrgency / 5);
-                float rightUrgency;
-                if (rightTarTime < leftIniTime || rightTarTime < currTime)
-                    rightUrgency = 100;
-                else
-                    rightUrgency = 100 - ((float) ((rightIniTime - currTime) / (rightTarTime - rightIniTime)) * 100);
-                rightUrgency = Math.round(rightUrgency / 5);
+                long rightTarTime = Long.parseLong(right.getTargetTimestamp());
+                leftTarTime = leftTarTime / (1000 * 60 * 60);
+                rightTarTime = rightTarTime / (1000 * 60 * 60);
                 int leftImp = Integer.parseInt(left.getImportance());
-                leftImp = Math.round((float) leftImp / 5);
+                leftImp = (leftImp / 25);
                 int rightImp = Integer.parseInt(right.getImportance());
-                rightImp = Math.round((float) rightImp / 5);
+                rightImp = (rightImp / 25);
                 String leftType = left.getType();
                 String rightType = right.getType();
-                if (leftUrgency > rightUrgency) return 1;
-                else if (leftUrgency < rightUrgency) return -1;
+                if (leftTarTime < rightTarTime) return -1;
+                else if (leftTarTime > rightTarTime) return 1;
                 else {
-                    if (leftImp > rightImp) return 1;
-                    else if (leftImp < rightImp) return -1;
+                    if (leftImp > rightImp) return -1;
+                    else if (leftImp < rightImp) return 1;
                     else {
                         if (leftType.compareToIgnoreCase("Productive") == 0 && rightType.compareToIgnoreCase("Productive") != 0)
                             return -1;

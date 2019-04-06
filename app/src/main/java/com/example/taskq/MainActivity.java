@@ -47,7 +47,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.Locale;
 
 
@@ -68,11 +67,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private RadioGroup Repeat_RG;
     private LinearLayout DatetimeLL;
     private EditText DateET;
+    private EditText TimeET;
     private Calendar calendar;
     private int mPos;
     SharedPreferences shref;
     InputMethodManager imm;
-    private EditText TimeET;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,6 +98,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         AddTask = findViewById(R.id.add_task);
         MainHintTV = findViewById(R.id.tv_main);
         user = FirebaseAuth.getInstance().getCurrentUser();
+
 
         shref = getApplicationContext().getSharedPreferences("tasks", Context.MODE_PRIVATE);
         Gson gson = new Gson();
@@ -181,23 +181,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 calendar.set(Calendar.YEAR, year);
                 calendar.set(Calendar.MONTH, month);
                 calendar.set(Calendar.DAY_OF_MONTH, day);
+                calendar.set(Calendar.HOUR_OF_DAY, 0);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                calendar.set(Calendar.MILLISECOND, 0);
                 updateDate();
             }
         };
-        final TimePickerDialog.OnTimeSetListener time = new TimePickerDialog.OnTimeSetListener() {
-            @Override
-            public void onTimeSet(TimePicker timePicker, int i, int i1) {
-                calendar.set(Calendar.HOUR_OF_DAY, i);
-                calendar.set(Calendar.MINUTE, i1);
-                calendar.set(Calendar.SECOND, 0);
-                calendar.set(Calendar.MILLISECOND, 0);
-                updateTime();
-            }
-        };
+
         DateET.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                calendar = Calendar.getInstance();
                 DatePickerDialog dpd = new DatePickerDialog(MainActivity.this, date,
                         calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH));
                 dpd.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
@@ -206,10 +200,23 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
         });
 
+        final TimePickerDialog.OnTimeSetListener time = new TimePickerDialog.OnTimeSetListener() {
+            @Override
+            public void onTimeSet(TimePicker timePicker, int i, int i1) {
+                calendar.set(Calendar.HOUR_OF_DAY, i);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                calendar.set(Calendar.MILLISECOND, 0);
+
+                updateTime();
+            }
+
+        };
+
         TimeET.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                TimePickerDialog tpd = new TimePickerDialog(MainActivity.this, time, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true);
+                TimePickerDialog tpd = new TimePickerDialog(MainActivity.this, time, calendar.get(Calendar.HOUR_OF_DAY) + 1, 0, false);
                 tpd.show();
             }
         });
@@ -269,23 +276,34 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             rb = findViewById(Repeat_RG.getCheckedRadioButtonId());
             String RepeatStr = rb.getText().toString();
             String dateStr = DateET.getText().toString();
-            String timeStr = TimeET.getText().toString();
-            if (RepeatStr.compareToIgnoreCase("Once") == 0 && (dateStr.compareToIgnoreCase("Date") == 0 || timeStr.compareToIgnoreCase("Time") == 0)) {
-                Toast.makeText(this, "Give proper Time and Date!", Toast.LENGTH_SHORT).show();
+            if (RepeatStr.compareToIgnoreCase("Once") == 0 && (dateStr.compareToIgnoreCase("Date") == 0)) {
+                Toast.makeText(this, "Give proper Date!", Toast.LENGTH_SHORT).show();
             } else {
                 String impStr = String.valueOf(Importance.getProgress());
                 String timestampStr = "0";
                 if (RepeatStr.compareToIgnoreCase("Once") == 0) {
-                    timestampStr = String.valueOf(calendar.getTimeInMillis());
+
                 } else if (RepeatStr.compareToIgnoreCase("Daily") == 0) {
-                    Calendar calendar = new GregorianCalendar();
-                    calendar.add(Calendar.DAY_OF_MONTH, 1);
-                    timestampStr = String.valueOf(calendar.getTimeInMillis());
+                    calendar = Calendar.getInstance();
+                    calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+                    calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
+                    calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH));
+                    calendar.set(Calendar.HOUR, calendar.get(Calendar.HOUR_OF_DAY));
+                    calendar.set(Calendar.MINUTE, 0);
+                    calendar.set(Calendar.SECOND, 0);
+                    calendar.set(Calendar.MILLISECOND, 0);
                 } else if (RepeatStr.compareToIgnoreCase("Weekly") == 0) {
-                    Calendar calendar = new GregorianCalendar();
-                    calendar.add(Calendar.DAY_OF_MONTH, 7);
-                    timestampStr = String.valueOf(calendar.getTimeInMillis());
+                    calendar = Calendar.getInstance();
+                    calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+                    calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
+                    calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 6);
+                    calendar.set(Calendar.HOUR, calendar.get(Calendar.HOUR_OF_DAY));
+                    calendar.set(Calendar.MINUTE, 0);
+                    calendar.set(Calendar.SECOND, 0);
+                    calendar.set(Calendar.MILLISECOND, 0);
                 }
+                timestampStr = String.valueOf(calendar.getTimeInMillis());
+
                 String initialTime = String.valueOf(Calendar.getInstance().getTimeInMillis());
                 DataModel e = new DataModel(titleStr, remarkStr, TypeStr, RepeatStr, impStr, TypeInt, RepeatInt, timestampStr, initialTime);
 
@@ -309,6 +327,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         AddTask.hide();
         calendar = Calendar.getInstance();
         if (position != -1) {
+            calendar.setTimeInMillis(Long.parseLong(mDataset.get(position).getTargetTimestamp()));
             Title.setText(mDataset.get(position).getTitle());
             Remark.setText(mDataset.get(position).getRemark());
             Type.check(Integer.parseInt(mDataset.get(position).getTaskid()));
@@ -316,8 +335,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if (mDataset.get(position).getRepeatid() != null)
                 Repeat_RG.check(Integer.parseInt(mDataset.get(position).getRepeatid()));
             SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/YY", Locale.getDefault());
-            SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm", Locale.getDefault());
             String datestr = dateFormat.format(new Date(Long.parseLong(mDataset.get(position).getTargetTimestamp())));
+            SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a", Locale.getDefault());
             String timestr = timeFormat.format(new Date(Long.parseLong(mDataset.get(position).getTargetTimestamp())));
             DateET.setText(datestr);
             TimeET.setText(timestr);
@@ -329,7 +348,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             Type.check(R.id.prod_submit);
             Repeat_RG.check(R.id.once_RB);
             DateET.setText("Date");
-            TimeET.setText("Time");
+            TimeET.setText("Time (Optional)");
             Importance.setProgress(0);
             Title.requestFocus();
             imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -397,9 +416,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
         DateET.setText(sdf.format(calendar.getTime()));
     }
-
     protected void updateTime() {
-        String myFormat = "hh:mm";
+        String myFormat = "hh:mm a";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
         TimeET.setText(sdf.format(calendar.getTime()));
     }
