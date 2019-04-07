@@ -36,8 +36,10 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
         holder.titleView.setText(dataSet.get(position).getTitle());
         if (dataSet.get(position).getRemark().isEmpty())
             holder.remarkView.setVisibility(View.GONE);
-        else
+        else {
+            holder.remarkView.setVisibility(View.VISIBLE);
             holder.remarkView.setText(dataSet.get(position).getRemark());
+        }
         SimpleDateFormat formatter = new SimpleDateFormat("hh a, E (dd/MM)", Locale.getDefault());
         String datestr = formatter.format(new Date(Long.parseLong(dataSet.get(position).getTargetTimestamp())));
         holder.datetimeView.setText("By " + datestr);

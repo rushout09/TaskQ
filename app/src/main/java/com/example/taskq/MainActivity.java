@@ -1,12 +1,17 @@
 package com.example.taskq;
 
+import android.app.AlarmManager;
 import android.app.DatePickerDialog;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -69,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private EditText TimeET;
     private Calendar calendar;
     private int mPos;
+    private AlarmManager alarmManager;
     SharedPreferences shref;
     InputMethodManager imm;
 
@@ -76,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        createNotificationChannel();
         if(FirebaseAuth.getInstance().getCurrentUser()==null){
             Intent intent = new Intent(MainActivity.this,SignInActivity.class);
             startActivity(intent);
@@ -96,6 +103,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         AddTask = findViewById(R.id.add_task);
         MainHintTV = findViewById(R.id.tv_main);
         user = FirebaseAuth.getInstance().getCurrentUser();
+        alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
 
         Gson gson = new Gson();
         shref = getApplicationContext().getSharedPreferences("tasks", Context.MODE_PRIVATE);
@@ -170,6 +178,19 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             item.setTargetTimestamp(String.valueOf(calendar.getTimeInMillis()));
                             mInvisible.add(item);
                         }
+                        Intent intent = new Intent(getApplicationContext(), Notification_receiver.class);
+                        intent.setAction(item.getTitle());
+                        intent.putExtra("title", item.getTitle());
+                        intent.putExtra("content", item.getRemark());
+                        PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                        alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(item.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
+                    } else {
+                        Intent intent = new Intent(getApplicationContext(), Notification_receiver.class);
+                        intent.setAction(item.getTitle());
+                        intent.putExtra("title", item.getTitle());
+                        intent.putExtra("content", item.getRemark());
+                        PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                        alarmManager.cancel(pendingIntent);
                     }
                     Snackbar snackbar = Snackbar.make(viewHolder.itemView, "Task Done.", Snackbar.LENGTH_SHORT);
                     snackbar.show();
@@ -180,6 +201,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     }
                 } else {
                     item = mAdapter.deleteItem(position);
+                    Intent intent = new Intent(getApplicationContext(), Notification_receiver.class);
+                    intent.setAction(item.getTitle());
+                    intent.putExtra("title", item.getTitle());
+                    intent.putExtra("content", item.getRemark());
+                    PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                    alarmManager.cancel(pendingIntent);
                     Snackbar snackbar = Snackbar.make(viewHolder.itemView, "Task Removed.", Snackbar.LENGTH_LONG);
                     snackbar.setAction("Undo", new View.OnClickListener() {
                         @Override
@@ -232,7 +259,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 calendar.set(Calendar.YEAR, year);
                 calendar.set(Calendar.MONTH, month);
                 calendar.set(Calendar.DAY_OF_MONTH, day);
-                calendar.set(Calendar.HOUR_OF_DAY, calendar.get(Calendar.HOUR_OF_DAY) + 1);
+                calendar.set(Calendar.HOUR_OF_DAY, 6);
                 calendar.set(Calendar.MINUTE, 0);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
@@ -255,7 +282,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             @Override
             public void onTimeSet(TimePicker timePicker, int i, int i1) {
                 calendar.set(Calendar.HOUR_OF_DAY, i);
-                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.MINUTE, i1);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
 
@@ -353,17 +380,25 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     calendar.set(Calendar.MILLISECOND, 0);
                 }
                 timestampStr = String.valueOf(calendar.getTimeInMillis());
-
-                String initialTime = String.valueOf(Calendar.getInstance().getTimeInMillis());
                 DataModel e = new DataModel(titleStr, remarkStr, TypeStr, RepeatStr, TypeInt, RepeatInt, timestampStr);
 
 
                 if (position != -1) {
+                    Intent intent = new Intent(getApplicationContext(), Notification_receiver.class);
+                    intent.setAction(mDataset.get(position).getTitle());
+                    intent.putExtra("title", mDataset.get(position).getTitle());
+                    intent.putExtra("content", mDataset.get(position).getRemark());
+                    PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                    alarmManager.cancel(pendingIntent);
                     mAdapter.deleteItem(position);
                     mPos = -1;
                 }
-
-
+                Intent intent = new Intent(getApplicationContext(), Notification_receiver.class);
+                intent.setAction(e.getTitle());
+                intent.putExtra("title", titleStr);
+                intent.putExtra("content", remarkStr);
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(e.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
                 mDataset.add(e);
                 mAdapter.sortData();
                 mAdapter.notifyDataSetChanged();
@@ -395,8 +430,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             String timestr = timeFormat.format(new Date(Long.parseLong(mDataset.get(position).getTargetTimestamp())));
             DateET.setText(datestr);
             TimeET.setText(timestr);
-
-
         } else {
             Title.setText("");
             Remark.setText("");
@@ -477,7 +510,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         DateET.setText(sdf.format(calendar.getTime()));
     }
     protected void updateTime() {
-        String myFormat = "hh a";
+        String myFormat = "hh:mm a";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
         TimeET.setText(sdf.format(calendar.getTime()));
     }
@@ -488,6 +521,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     @Override
     public void onNothingSelected(AdapterView<?> adapterView) {
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence sequence = "general";
+            String description = "All notifs";
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel("123", sequence, importance);
+            channel.setDescription(description);
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
     }
 }
 
