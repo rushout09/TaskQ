@@ -19,27 +19,29 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/title_view"
-                android:padding="4dp"
-                android:paddingBottom="2dp"
-                android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
-                android:text="Hello World!"/>
+                android:paddingLeft="6dp"
+                android:paddingTop="4dp"
+                android:paddingRight="6dp"
+                android:textColor="#000000"
+                android:textSize="20sp" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/remark_view"
-                android:textAppearance="@style/Base.TextAppearance.AppCompat.Small"
-                android:paddingStart="8dp"
-                android:paddingLeft="8dp"
-                android:paddingTop="2dp" />
+                android:paddingLeft="6dp"
+                android:paddingTop="2dp"
+                android:paddingRight="6dp"
+                android:textSize="16sp" />
 
             <TextView
                 android:id="@+id/datetime_TV"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingStart="8dp"
-                android:paddingLeft="8dp"
                 android:paddingTop="2dp"
-                android:textAppearance="@style/Base.TextAppearance.AppCompat.Small" />
+                android:paddingLeft="6dp"
+                android:paddingRight="6dp"
+                android:paddingBottom="4dp"
+                android:textSize="12sp" />
         </LinearLayout>
     </android.support.v7.widget.CardView>
 

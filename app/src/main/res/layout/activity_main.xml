@@ -16,7 +16,7 @@
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
         android:id="@+id/tv_main"
-        android:text="Tap the button to Add a Task"/>
+        android:text="Tap the button to Add a Task\nLeft swipe the task to complete it.\nRight swipe the task to delete it." />
 
     <ScrollView
         android:id="@+id/scrollView"
@@ -163,24 +163,6 @@
                         android:padding="4dp"
                         android:text="And Time"
                         android:textAlignment="center" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="8dp">
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="Importance"
-                        android:layout_weight="2"/>
-
-                    <SeekBar
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:id="@+id/imp_submit"
-                        android:layout_weight="8" />
                 </LinearLayout>
 
                 <Button

@@ -30,7 +30,6 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
@@ -57,11 +56,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private MyAdapter mAdapter;
     private RecyclerView.LayoutManager layoutManager;
     private ArrayList<DataModel> mDataset;
+    private ArrayList<DataModel> mInvisible;
     private Button SubmitButton;
     private EditText Title;
     private EditText Remark;
     private RadioGroup Type;
-    private SeekBar Importance;
     private FloatingActionButton AddTask;
     private FirebaseUser user;
     private RadioGroup Repeat_RG;
@@ -94,18 +93,36 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         DateET = findViewById(R.id.date_ET);
         TimeET = findViewById(R.id.time_ET);
         DatetimeLL = findViewById(R.id.datetime_LL);
-        Importance = findViewById(R.id.imp_submit);
         AddTask = findViewById(R.id.add_task);
         MainHintTV = findViewById(R.id.tv_main);
         user = FirebaseAuth.getInstance().getCurrentUser();
 
-
-        shref = getApplicationContext().getSharedPreferences("tasks", Context.MODE_PRIVATE);
         Gson gson = new Gson();
+        shref = getApplicationContext().getSharedPreferences("tasks", Context.MODE_PRIVATE);
         String response = shref.getString(user.getUid(), "");
         mDataset = gson.fromJson(response, new TypeToken<ArrayList<DataModel>>() {
         }.getType());
-        if (mDataset == null) {
+
+        shref = getApplicationContext().getSharedPreferences("invisible", Context.MODE_PRIVATE);
+        response = shref.getString(user.getUid(), "");
+        mInvisible = gson.fromJson(response, new TypeToken<ArrayList<DataModel>>() {
+        }.getType());
+        if (mInvisible != null && !mInvisible.isEmpty()) {
+            long currtime = System.currentTimeMillis();
+            for (DataModel d : mInvisible) {
+                if (Long.parseLong(d.getTargetTimestamp()) - currtime < 1000 * 60 * 60 * 12 && d.getRepeat().compareTo("Daily") == 0) {
+                    mDataset.add(d);
+                    mInvisible.remove(d);
+                }
+                if (Long.parseLong(d.getTargetTimestamp()) - currtime < 1000 * 60 * 60 * 24 * 3 && d.getRepeat().compareTo("Weekly") == 0) {
+                    mDataset.add(d);
+                    mInvisible.remove(d);
+                }
+            }
+        } else {
+            mInvisible = new ArrayList<DataModel>();
+        }
+        if (mDataset == null || mDataset.isEmpty()) {
             mDataset = new ArrayList<DataModel>();
             MainHintTV.setVisibility(View.VISIBLE);
         } else {
@@ -129,9 +146,38 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 final int position = viewHolder.getAdapterPosition();
                 final DataModel item;
                 if (direction == ItemTouchHelper.LEFT) {
-                    mAdapter.removeItem(position);
+                    item = mAdapter.deleteItem(position);
+                    if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
+                        Calendar calendar = Calendar.getInstance();
+                        if (item.getRepeat().compareToIgnoreCase("Daily") == 0) {
+                            calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+                            calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
+                            calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1);
+                            calendar.set(Calendar.HOUR_OF_DAY, calendar.get(Calendar.HOUR_OF_DAY) + 1);
+                            calendar.set(Calendar.MINUTE, 0);
+                            calendar.set(Calendar.SECOND, 0);
+                            calendar.set(Calendar.MILLISECOND, 0);
+                            item.setTargetTimestamp(String.valueOf(calendar.getTimeInMillis()));
+                            mInvisible.add(item);
+                        } else if (item.getRepeat().compareToIgnoreCase("Weekly") == 0) {
+                            calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+                            calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
+                            calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 7);
+                            calendar.set(Calendar.HOUR_OF_DAY, calendar.get(Calendar.HOUR_OF_DAY) + 1);
+                            calendar.set(Calendar.MINUTE, 0);
+                            calendar.set(Calendar.SECOND, 0);
+                            calendar.set(Calendar.MILLISECOND, 0);
+                            item.setTargetTimestamp(String.valueOf(calendar.getTimeInMillis()));
+                            mInvisible.add(item);
+                        }
+                    }
                     Snackbar snackbar = Snackbar.make(viewHolder.itemView, "Task Done.", Snackbar.LENGTH_SHORT);
                     snackbar.show();
+                    if (mDataset == null || mDataset.isEmpty()) {
+                        MainHintTV.setVisibility(View.VISIBLE);
+                    } else {
+                        MainHintTV.setVisibility(View.GONE);
+                    }
                 } else {
                     item = mAdapter.deleteItem(position);
                     Snackbar snackbar = Snackbar.make(viewHolder.itemView, "Task Removed.", Snackbar.LENGTH_LONG);
@@ -139,13 +185,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         @Override
                         public void onClick(View view) {
                             try {
-                                mAdapter.addItem(item, position);
+                                mAdapter.addItem(item);
                             } catch (Exception e) {
                                 Log.e("MainActivity", e.getMessage());
                             }
                         }
                     });
                     snackbar.show();
+                    if (mDataset == null || mDataset.isEmpty()) {
+                        MainHintTV.setVisibility(View.VISIBLE);
+                    } else {
+                        MainHintTV.setVisibility(View.GONE);
+                    }
                 }
             }
             // You must use @RecyclerViewSwipeDecorator inside the onChildDraw method
@@ -181,7 +232,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 calendar.set(Calendar.YEAR, year);
                 calendar.set(Calendar.MONTH, month);
                 calendar.set(Calendar.DAY_OF_MONTH, day);
-                calendar.set(Calendar.HOUR_OF_DAY, 0);
+                calendar.set(Calendar.HOUR_OF_DAY, calendar.get(Calendar.HOUR_OF_DAY) + 1);
                 calendar.set(Calendar.MINUTE, 0);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
@@ -279,7 +330,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if (RepeatStr.compareToIgnoreCase("Once") == 0 && (dateStr.compareToIgnoreCase("Date") == 0)) {
                 Toast.makeText(this, "Give proper Date!", Toast.LENGTH_SHORT).show();
             } else {
-                String impStr = String.valueOf(Importance.getProgress());
                 String timestampStr = "0";
                 if (RepeatStr.compareToIgnoreCase("Once") == 0) {
 
@@ -288,7 +338,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
                     calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
                     calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH));
-                    calendar.set(Calendar.HOUR, calendar.get(Calendar.HOUR_OF_DAY));
+                    calendar.set(Calendar.HOUR, calendar.get(Calendar.HOUR_OF_DAY) + 1);
                     calendar.set(Calendar.MINUTE, 0);
                     calendar.set(Calendar.SECOND, 0);
                     calendar.set(Calendar.MILLISECOND, 0);
@@ -297,7 +347,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
                     calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
                     calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 6);
-                    calendar.set(Calendar.HOUR, calendar.get(Calendar.HOUR_OF_DAY));
+                    calendar.set(Calendar.HOUR, calendar.get(Calendar.HOUR_OF_DAY) + 1);
                     calendar.set(Calendar.MINUTE, 0);
                     calendar.set(Calendar.SECOND, 0);
                     calendar.set(Calendar.MILLISECOND, 0);
@@ -305,7 +355,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 timestampStr = String.valueOf(calendar.getTimeInMillis());
 
                 String initialTime = String.valueOf(Calendar.getInstance().getTimeInMillis());
-                DataModel e = new DataModel(titleStr, remarkStr, TypeStr, RepeatStr, impStr, TypeInt, RepeatInt, timestampStr, initialTime);
+                DataModel e = new DataModel(titleStr, remarkStr, TypeStr, RepeatStr, TypeInt, RepeatInt, timestampStr);
 
 
                 if (position != -1) {
@@ -318,6 +368,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 mAdapter.sortData();
                 mAdapter.notifyDataSetChanged();
                 buttonVisible();
+                if (mDataset == null || mDataset.isEmpty()) {
+                    MainHintTV.setVisibility(View.VISIBLE);
+                } else {
+                    MainHintTV.setVisibility(View.GONE);
+                }
                 Toast.makeText(this, "Task Added!", Toast.LENGTH_SHORT).show();
             }
         }
@@ -340,7 +395,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             String timestr = timeFormat.format(new Date(Long.parseLong(mDataset.get(position).getTargetTimestamp())));
             DateET.setText(datestr);
             TimeET.setText(timestr);
-            Importance.setProgress(Integer.parseInt(mDataset.get(position).getImportance()));
+
 
         } else {
             Title.setText("");
@@ -349,7 +404,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             Repeat_RG.check(R.id.once_RB);
             DateET.setText("Date");
             TimeET.setText("Time (Optional)");
-            Importance.setProgress(0);
             Title.requestFocus();
             imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.showSoftInput(Title, 0);
@@ -409,15 +463,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         editor.remove(user.getUid()).apply();
         editor.putString(user.getUid(),json);
         editor.commit();
+        shref = getApplicationContext().getSharedPreferences("invisible", Context.MODE_PRIVATE);
+        json = gson.toJson(mInvisible);
+        editor = shref.edit();
+        editor.remove(user.getUid()).apply();
+        editor.putString(user.getUid(), json);
+        editor.commit();
     }
 
     protected void updateDate() {
-        String myFormat = "dd/MM/yy";
+        String myFormat = "dd/MM/yy (EEEE)";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
         DateET.setText(sdf.format(calendar.getTime()));
     }
     protected void updateTime() {
-        String myFormat = "hh:mm a";
+        String myFormat = "hh a";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
         TimeET.setText(sdf.format(calendar.getTime()));
     }
