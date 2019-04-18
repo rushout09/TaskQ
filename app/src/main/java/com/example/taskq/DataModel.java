@@ -8,7 +8,6 @@ public class DataModel {
     private String mRepeat;
     private String mTaskid;
     private String mRepeatid;
-    private String mInitialTimestamp;
     private String mTargetTimestamp;
 
     public DataModel(){}
@@ -55,5 +54,29 @@ public class DataModel {
 
     public void setTargetTimestamp(String mTargetTimestamp) {
         this.mTargetTimestamp = mTargetTimestamp;
+    }
+
+    public void setType(String mType) {
+        this.mType = mType;
+    }
+
+    public void setTitle(String mTitle) {
+        this.mTitle = mTitle;
+    }
+
+    public void setRemark(String mRemark) {
+        this.mRemark = mRemark;
+    }
+
+    public void setRepeat(String mRepeat) {
+        this.mRepeat = mRepeat;
+    }
+
+    public void setRepeatid(String mRepeatid) {
+        this.mRepeatid = mRepeatid;
+    }
+
+    public void setTaskid(String mTaskid) {
+        this.mTaskid = mTaskid;
     }
 }

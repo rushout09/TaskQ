@@ -40,7 +40,7 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
             holder.remarkView.setVisibility(View.VISIBLE);
             holder.remarkView.setText(dataSet.get(position).getRemark());
         }
-        SimpleDateFormat formatter = new SimpleDateFormat("hh a, E (dd/MM)", Locale.getDefault());
+        SimpleDateFormat formatter = new SimpleDateFormat("hh:mm a, E (dd/MM)", Locale.getDefault());
         String datestr = formatter.format(new Date(Long.parseLong(dataSet.get(position).getTargetTimestamp())));
         holder.datetimeView.setText("By " + datestr);
     }
@@ -78,6 +78,7 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
         try {
             item = dataSet.get(position);
             dataSet.remove(position);
+            sortData();
             notifyItemRemoved(position);
         } catch (Exception e) {
             Log.e("Adapter", e.getMessage());

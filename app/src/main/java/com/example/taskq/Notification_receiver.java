@@ -8,6 +8,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 
+import java.util.Random;
+
 public class Notification_receiver extends BroadcastReceiver {
 
     @Override
@@ -22,8 +24,11 @@ public class Notification_receiver extends BroadcastReceiver {
                 .setContentTitle(extras.getString("title"))
                 .setContentText(extras.getString("content"))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(extras.getString("content")))
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
-        notificationManager.notify(0, builder.build());
+        Random random = new Random();
+        int m = random.nextInt(10000);
+        notificationManager.notify(m, builder.build());
     }
 }

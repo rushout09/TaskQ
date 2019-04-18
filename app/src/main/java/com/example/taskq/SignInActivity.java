@@ -23,6 +23,8 @@ public class SignInActivity extends AppCompatActivity{
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.signin);
+        android.support.v7.widget.Toolbar toolbar = findViewById(R.id.tool_bar);
+        setSupportActionBar(toolbar);
         btn = findViewById(R.id.signinBTN);
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
