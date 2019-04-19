@@ -143,7 +143,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         recyclerView.setLayoutManager(layoutManager);
         mAdapter = new TasksAdapter(mDataset);
         recyclerView.setAdapter(mAdapter);
-        ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+        ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
 
             DataModel item;
 
@@ -155,56 +155,70 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
                 final int position = viewHolder.getAdapterPosition();
-                if (direction == ItemTouchHelper.LEFT) {
-                    item = mAdapter.deleteItem(position);
-
-                    Intent intent = new Intent(getActivity(), Notification_receiver.class);
-                    intent.setAction(item.getTitle() + item.getTargetTimestamp());
-                    intent.putExtra("title", item.getTitle());
-                    intent.putExtra("content", item.getRemark());
-                    PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                    alarmManager.cancel(pendingIntent);
-
-                    DataModel delItem = new DataModel();
-                    delItem.setTitle(item.getTitle());
-                    delItem.setRepeat(item.getRepeat());
-                    delItem.setTaskid(item.getTaskid());
-                    delItem.setRepeatid(item.getRepeatid());
-                    delItem.setRemark(item.getRemark());
-                    delItem.setType(item.getType());
-                    delItem.setTargetTimestamp(String.valueOf(System.currentTimeMillis()));
-                    SM.sendData(delItem);
-
-                    if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
-                        Calendar calendar = Calendar.getInstance();
-                        calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
-                        calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
-                        if (item.getRepeat().compareToIgnoreCase("Daily") == 0)
-                            calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1);
-                        else
-                            calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 6);
-                        calendar.set(Calendar.HOUR_OF_DAY, calendar.get(Calendar.HOUR_OF_DAY));
-                        calendar.set(Calendar.MINUTE, 0);
-                        calendar.set(Calendar.SECOND, 0);
-                        calendar.set(Calendar.MILLISECOND, 0);
-                        item.setTargetTimestamp(String.valueOf(calendar.getTimeInMillis()));
-                        mInvisible.add(item);
-
-                        intent = new Intent(getActivity(), Notification_receiver.class);
-                        intent.setAction(item.getTitle() + item.getTargetTimestamp());
-                        intent.putExtra("title", item.getTitle());
-                        intent.putExtra("content", item.getRemark());
-                        pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                        alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(item.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
+                Snackbar snackbar = Snackbar.make(viewHolder.itemView, "Task Done.", Snackbar.LENGTH_SHORT);
+                snackbar.setAction("Undo", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        mAdapter.notifyDataSetChanged();
                     }
-                    Snackbar snackbar = Snackbar.make(viewHolder.itemView, "Task Done.", Snackbar.LENGTH_SHORT);
-                    snackbar.show();
-                    if (mDataset == null || mDataset.isEmpty()) {
-                        MainHintTV.setVisibility(View.VISIBLE);
-                    } else {
-                        MainHintTV.setVisibility(View.GONE);
+                });
+                snackbar.addCallback(new Snackbar.Callback() {
+                    @Override
+                    public void onDismissed(Snackbar transientBottomBar, int event) {
+                        if (event == Snackbar.Callback.DISMISS_EVENT_TIMEOUT) {
+                            item = mAdapter.deleteItem(position);
+
+                            Intent intent = new Intent(getActivity(), Notification_receiver.class);
+                            intent.setAction(item.getTitle() + item.getTargetTimestamp());
+                            intent.putExtra("title", item.getTitle());
+                            intent.putExtra("content", item.getRemark());
+                            PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                            alarmManager.cancel(pendingIntent);
+
+                            DataModel delItem = new DataModel();
+                            delItem.setTitle(item.getTitle());
+                            delItem.setRepeat(item.getRepeat());
+                            delItem.setTaskid(item.getTaskid());
+                            delItem.setRepeatid(item.getRepeatid());
+                            delItem.setRemark(item.getRemark());
+                            delItem.setType(item.getType());
+                            delItem.setTargetTimestamp(String.valueOf(System.currentTimeMillis()));
+                            SM.sendData(delItem);
+
+                            if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
+                                Calendar calendar = Calendar.getInstance();
+                                calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+                                calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
+                                if (item.getRepeat().compareToIgnoreCase("Daily") == 0)
+                                    calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1);
+                                else
+                                    calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 6);
+                                calendar.set(Calendar.HOUR_OF_DAY, calendar.get(Calendar.HOUR_OF_DAY));
+                                calendar.set(Calendar.MINUTE, 0);
+                                calendar.set(Calendar.SECOND, 0);
+                                calendar.set(Calendar.MILLISECOND, 0);
+                                item.setTargetTimestamp(String.valueOf(calendar.getTimeInMillis()));
+                                mInvisible.add(item);
+
+                                intent = new Intent(getActivity(), Notification_receiver.class);
+                                intent.setAction(item.getTitle() + item.getTargetTimestamp());
+                                intent.putExtra("title", item.getTitle());
+                                intent.putExtra("content", item.getRemark());
+                                pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                                alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(item.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
+                            }
+
+                            if (mDataset == null || mDataset.isEmpty()) {
+                                MainHintTV.setVisibility(View.VISIBLE);
+                            } else {
+                                MainHintTV.setVisibility(View.GONE);
+                            }
+
+                        }
                     }
-                } else {
+                });
+                snackbar.show();
+                /* else {
                     item = mAdapter.deleteItem(position);
                     Intent intent = new Intent(getActivity(), Notification_receiver.class);
                     intent.setAction(this.item.getTitle() + this.item.getTargetTimestamp());
@@ -230,7 +244,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                     } else {
                         MainHintTV.setVisibility(View.GONE);
                     }
-                }
+                }*/
             }
             // You must use @RecyclerViewSwipeDecorator inside the onChildDraw method
 
@@ -238,14 +252,14 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
 
                 new RecyclerViewSwipeDecorator.Builder(getContext(), c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
-                        .addSwipeLeftBackgroundColor(ContextCompat.getColor(getContext(), R.color.recycler_view_item_swipe_left_background))
-                        .addSwipeLeftActionIcon(R.drawable.ic_archive_white_24dp)
-                        .addSwipeRightBackgroundColor(ContextCompat.getColor(getContext(), R.color.recycler_view_item_swipe_right_background))
-                        .addSwipeRightActionIcon(R.drawable.ic_delete_sweep_white_24dp)
-                        .addSwipeRightLabel("Delete")
+                        /*.addSwipeLeftBackgroundColor(ContextCompat.getColor(getContext(), R.color.recycler_view_item_swipe_left_background))
+                        .addSwipeLeftActionIcon(R.drawable.ic_archive_white_24dp)*/
+                        .addSwipeRightBackgroundColor(ContextCompat.getColor(getContext(), R.color.recycler_view_item_swipe_left_background))
+                        .addSwipeRightActionIcon(R.drawable.ic_archive_white_24dp)
+                        .addSwipeRightLabel("Done!")
                         .setSwipeRightLabelColor(Color.WHITE)
-                        .addSwipeLeftLabel("Done!")
-                        .setSwipeLeftLabelColor(Color.WHITE)
+                        /*.addSwipeLeftLabel("Done!")
+                        .setSwipeLeftLabelColor(Color.WHITE)*/
                         .create()
                         .decorate();
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
@@ -350,104 +364,107 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
     protected void submitTask(int position, View rootview) {
         if (position == -1) {
             String titleStr = Title.getText().toString();
+            String remarkStr = Remark.getText().toString();
+            String TypeInt = String.valueOf(Type.getCheckedRadioButtonId());
+            String RepeatInt = String.valueOf(Repeat_RG.getCheckedRadioButtonId());
+            RadioButton rb = rootview.findViewById(Type.getCheckedRadioButtonId());
+            String TypeStr = rb.getText().toString();
+            rb = rootview.findViewById(Repeat_RG.getCheckedRadioButtonId());
+            String RepeatStr = rb.getText().toString();
+            String dateStr = DateET.getText().toString();
+            String timestampStr = "0";
+            if (RepeatStr.compareToIgnoreCase("Daily") == 0) {
+                calendar = Calendar.getInstance();
+                calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+                calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
+                calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH));
+                calendar.set(Calendar.HOUR, calendar.get(Calendar.HOUR_OF_DAY) + 1);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                calendar.set(Calendar.MILLISECOND, 0);
+            } else if (RepeatStr.compareToIgnoreCase("Weekly") == 0) {
+                calendar = Calendar.getInstance();
+                calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+                calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
+                calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 6);
+                calendar.set(Calendar.HOUR, calendar.get(Calendar.HOUR_OF_DAY));
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                calendar.set(Calendar.MILLISECOND, 0);
+            }
             if (titleStr.isEmpty()) {
                 Toast.makeText(getContext(), "Empty Title!", Toast.LENGTH_SHORT).show();
+            } else if (RepeatStr.compareToIgnoreCase("Once") == 0 && (dateStr.compareToIgnoreCase("Date") == 0)) {
+                Toast.makeText(getContext(), "Give proper Date!", Toast.LENGTH_SHORT).show();
             } else {
-                String remarkStr = Remark.getText().toString();
-                String TypeInt = String.valueOf(Type.getCheckedRadioButtonId());
-                String RepeatInt = String.valueOf(Repeat_RG.getCheckedRadioButtonId());
-                RadioButton rb = rootview.findViewById(Type.getCheckedRadioButtonId());
-                String TypeStr = rb.getText().toString();
-                rb = rootview.findViewById(Repeat_RG.getCheckedRadioButtonId());
-                String RepeatStr = rb.getText().toString();
-                String dateStr = DateET.getText().toString();
-                if (RepeatStr.compareToIgnoreCase("Once") == 0 && (dateStr.compareToIgnoreCase("Date") == 0)) {
-                    Toast.makeText(getContext(), "Give proper Date!", Toast.LENGTH_SHORT).show();
+                timestampStr = String.valueOf(calendar.getTimeInMillis());
+                DataModel newTask = new DataModel(titleStr, remarkStr, TypeStr, RepeatStr, TypeInt, RepeatInt, timestampStr);
+                Intent intent = new Intent(getActivity(), Notification_receiver.class);
+                intent.setAction(newTask.getTitle() + newTask.getTargetTimestamp());
+                intent.putExtra("title", titleStr);
+                intent.putExtra("content", remarkStr);
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(newTask.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
+                mDataset.add(newTask);
+                mAdapter.notifyDataSetChanged();
+                Toast.makeText(getContext(), "Task Added!", Toast.LENGTH_SHORT).show();
+
+                buttonVisible();
+                if (mDataset == null || mDataset.isEmpty()) {
+                    MainHintTV.setVisibility(View.VISIBLE);
                 } else {
-                    String timestampStr = "0";
-                    if (RepeatStr.compareToIgnoreCase("Daily") == 0) {
-                        calendar = Calendar.getInstance();
-                        calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
-                        calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
-                        calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH));
-                        calendar.set(Calendar.HOUR, calendar.get(Calendar.HOUR_OF_DAY) + 1);
-                        calendar.set(Calendar.MINUTE, 0);
-                        calendar.set(Calendar.SECOND, 0);
-                        calendar.set(Calendar.MILLISECOND, 0);
-                    } else if (RepeatStr.compareToIgnoreCase("Weekly") == 0) {
-                        calendar = Calendar.getInstance();
-                        calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
-                        calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
-                        calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 6);
-                        calendar.set(Calendar.HOUR, calendar.get(Calendar.HOUR_OF_DAY));
-                        calendar.set(Calendar.MINUTE, 0);
-                        calendar.set(Calendar.SECOND, 0);
-                        calendar.set(Calendar.MILLISECOND, 0);
-                    }
-                    timestampStr = String.valueOf(calendar.getTimeInMillis());
-                    DataModel newTask = new DataModel(titleStr, remarkStr, TypeStr, RepeatStr, TypeInt, RepeatInt, timestampStr);
-                    Intent intent = new Intent(getActivity(), Notification_receiver.class);
-                    intent.setAction(newTask.getTitle() + newTask.getTargetTimestamp());
-                    intent.putExtra("title", titleStr);
-                    intent.putExtra("content", remarkStr);
-                    PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                    alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(newTask.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
-                    mDataset.add(newTask);
-                    mAdapter.notifyDataSetChanged();
-                    Toast.makeText(getContext(), "Task Added!", Toast.LENGTH_SHORT).show();
+                    MainHintTV.setVisibility(View.GONE);
                 }
             }
         } else {
             String titleStr = Title.getText().toString();
+            DataModel currentTask = mDataset.get(position);
+            String remarkStr = Remark.getText().toString();
+            String TypeInt = String.valueOf(Type.getCheckedRadioButtonId());
+            String repeatInt = String.valueOf(Repeat_RG.getCheckedRadioButtonId());
+            RadioButton rb = rootview.findViewById(Type.getCheckedRadioButtonId());
+            String TypeStr = rb.getText().toString();
+            rb = rootview.findViewById(Repeat_RG.getCheckedRadioButtonId());
+            String repeatStr = rb.getText().toString();
+            String dateStr = DateET.getText().toString();
             if (titleStr.isEmpty()) {
                 Toast.makeText(getContext(), "Empty Title!", Toast.LENGTH_SHORT).show();
+            } else if (repeatStr.compareToIgnoreCase("Once") == 0 && (dateStr.compareToIgnoreCase("Date") == 0)) {
+                Toast.makeText(getContext(), "Give proper Date!", Toast.LENGTH_SHORT).show();
             } else {
-                DataModel currentTask = mDataset.get(position);
-                String remarkStr = Remark.getText().toString();
-                String TypeInt = String.valueOf(Type.getCheckedRadioButtonId());
-                String repeatInt = String.valueOf(Repeat_RG.getCheckedRadioButtonId());
-                RadioButton rb = rootview.findViewById(Type.getCheckedRadioButtonId());
-                String TypeStr = rb.getText().toString();
-                rb = rootview.findViewById(Repeat_RG.getCheckedRadioButtonId());
-                String repeatStr = rb.getText().toString();
-                String dateStr = DateET.getText().toString();
-                if (repeatStr.compareToIgnoreCase("Once") == 0 && (dateStr.compareToIgnoreCase("Date") == 0)) {
-                    Toast.makeText(getContext(), "Give proper Date!", Toast.LENGTH_SHORT).show();
+                String timestampStr = String.valueOf(calendar.getTimeInMillis());
+                Intent intent = new Intent(getContext(), Notification_receiver.class);
+                intent.setAction(currentTask.getTitle() + currentTask.getTargetTimestamp());
+                intent.putExtra("title", currentTask.getTitle());
+                intent.putExtra("content", currentTask.getRemark());
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(getContext(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                alarmManager.cancel(pendingIntent);
+
+                currentTask.setTargetTimestamp(timestampStr);
+                currentTask.setType(TypeStr);
+                currentTask.setRemark(remarkStr);
+                currentTask.setRepeatid(repeatInt);
+                currentTask.setTaskid(TypeInt);
+                currentTask.setRepeat(repeatStr);
+                currentTask.setTitle(titleStr);
+
+                intent = new Intent(getContext(), Notification_receiver.class);
+                intent.setAction(currentTask.getTitle() + currentTask.getTargetTimestamp());
+                intent.putExtra("title", titleStr);
+                intent.putExtra("content", remarkStr);
+                pendingIntent = PendingIntent.getBroadcast(getContext(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(currentTask.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
+                mAdapter.notifyDataSetChanged();
+                Toast.makeText(getContext(), "Task Updated!", Toast.LENGTH_SHORT).show();
+
+                buttonVisible();
+                if (mDataset == null || mDataset.isEmpty()) {
+                    MainHintTV.setVisibility(View.VISIBLE);
                 } else {
-                    String timestampStr = String.valueOf(calendar.getTimeInMillis());
-                    Intent intent = new Intent(getContext(), Notification_receiver.class);
-                    intent.setAction(currentTask.getTitle() + currentTask.getTargetTimestamp());
-                    intent.putExtra("title", currentTask.getTitle());
-                    intent.putExtra("content", currentTask.getRemark());
-                    PendingIntent pendingIntent = PendingIntent.getBroadcast(getContext(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                    alarmManager.cancel(pendingIntent);
-
-                    currentTask.setTargetTimestamp(timestampStr);
-                    currentTask.setType(TypeStr);
-                    currentTask.setRemark(remarkStr);
-                    currentTask.setRepeatid(repeatInt);
-                    currentTask.setTaskid(TypeInt);
-                    currentTask.setRepeat(repeatStr);
-                    currentTask.setTitle(titleStr);
-
-                    intent = new Intent(getContext(), Notification_receiver.class);
-                    intent.setAction(currentTask.getTitle() + currentTask.getTargetTimestamp());
-                    intent.putExtra("title", titleStr);
-                    intent.putExtra("content", remarkStr);
-                    pendingIntent = PendingIntent.getBroadcast(getContext(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                    alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(currentTask.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
-                    mAdapter.notifyDataSetChanged();
-                    Toast.makeText(getContext(), "Task Updated!", Toast.LENGTH_SHORT).show();
+                    MainHintTV.setVisibility(View.GONE);
                 }
             }
         }
-        buttonVisible();
-        if (mDataset == null || mDataset.isEmpty()) {
-            MainHintTV.setVisibility(View.VISIBLE);
-        } else {
-            MainHintTV.setVisibility(View.GONE);
-        }
-
     }
 
     protected void cardVisible(int position) {

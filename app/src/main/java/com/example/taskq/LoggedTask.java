@@ -84,6 +84,12 @@ public class LoggedTask extends Fragment {
     protected void addDoneList(DataModel model) {
         LoggedTaskList.add(model);
         mAdapter.notifyDataSetChanged();
+        if (LoggedTaskList == null || LoggedTaskList.isEmpty()) {
+            LoggedTaskList = new ArrayList<DataModel>();
+            BGTV.setVisibility(View.VISIBLE);
+        } else {
+            BGTV.setVisibility(View.GONE);
+        }
     }
 
     @Override

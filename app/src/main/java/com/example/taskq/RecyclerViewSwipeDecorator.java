@@ -1,29 +1,17 @@
 package com.example.taskq;
 
 
-
 import android.content.Context;
-
 import android.graphics.Canvas;
-
 import android.graphics.Color;
-
 import android.graphics.Typeface;
-
 import android.graphics.drawable.ColorDrawable;
-
 import android.graphics.drawable.Drawable;
-
 import android.support.v4.content.ContextCompat;
-
 import android.support.v7.widget.RecyclerView;
-
 import android.support.v7.widget.helper.ItemTouchHelper;
-
 import android.text.TextPaint;
-
 import android.util.Log;
-
 import android.util.TypedValue;
 
 
@@ -421,8 +409,7 @@ public class RecyclerViewSwipeDecorator {
         try {
 
             if ( actionState != ItemTouchHelper.ACTION_STATE_SWIPE ) return;
-
-
+            if (dX < 0) return;
 
             if ( dX > 0 ) {
 
@@ -481,8 +468,7 @@ public class RecyclerViewSwipeDecorator {
                 }
 
 
-
-            } else if ( dX < 0 ) {
+            }/* else if ( dX < 0 ) {
 
                 // Swiping Left
 
@@ -540,7 +526,7 @@ public class RecyclerViewSwipeDecorator {
 
                 }
 
-            }
+            }*/
 
         } catch(Exception e) {
 
