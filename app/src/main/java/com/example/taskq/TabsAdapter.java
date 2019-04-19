@@ -1,15 +1,13 @@
 package com.example.taskq;
 
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.app.FragmentPagerAdapter;
 
-public class TabsAdapter extends FragmentStatePagerAdapter {
-    int mNumOfTabs;
-
-    public TabsAdapter(FragmentManager fm, int NoofTabs) {
+public class TabsAdapter extends FragmentPagerAdapter {
+    public TabsAdapter(FragmentManager fm) {
         super(fm);
-        this.mNumOfTabs = NoofTabs;
     }
 
     @Override
@@ -28,6 +26,18 @@ public class TabsAdapter extends FragmentStatePagerAdapter {
 
     @Override
     public int getCount() {
-        return mNumOfTabs;
+        return 2;
+    }
+
+    @Nullable
+    @Override
+    public CharSequence getPageTitle(int position) {
+        String title = null;
+        if (position == 0) {
+            title = "To Dos";
+        } else {
+            title = "Done";
+        }
+        return title;
     }
 }

@@ -61,7 +61,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
     SharedPreferences shref;
     InputMethodManager imm;
     private RecyclerView recyclerView;
-    private MyAdapter mAdapter;
+    SendMessage SM;
     private RecyclerView.LayoutManager layoutManager;
     private ArrayList<DataModel> mDataset;
     private ArrayList<DataModel> mInvisible;
@@ -76,11 +76,18 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
     private Calendar calendar;
     private AlarmManager alarmManager;
     private FirebaseUser user;
+    private TasksAdapter mAdapter;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View rootview = inflater.inflate(R.layout.fragment_active_task, container, false);
+        return rootview;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull final View rootview, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(rootview, savedInstanceState);
         recyclerView = rootview.findViewById(R.id.recycler_view);
         cardView = rootview.findViewById(R.id.cardview_main);
         SubmitButton = rootview.findViewById(R.id.task_submit);
@@ -108,13 +115,13 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         }.getType());
         ArrayList<DataModel> arrayList = new ArrayList<>();
         if (mInvisible != null && !mInvisible.isEmpty()) {
-            long currtime = System.currentTimeMillis();
+            long currentTimeMillis = System.currentTimeMillis();
             for (DataModel d : mInvisible) {
-                if (Long.parseLong(d.getTargetTimestamp()) - currtime < 1000 * 60 * 60 * 12 && d.getRepeat().compareTo("Daily") == 0) {
+                if (Long.parseLong(d.getTargetTimestamp()) - currentTimeMillis < 1000 * 60 * 60 * 12 && d.getRepeat().compareTo("Daily") == 0) {
                     mDataset.add(d);
                     arrayList.add(d);
                 }
-                if (Long.parseLong(d.getTargetTimestamp()) - currtime < 1000 * 60 * 60 * 24 * 3 && d.getRepeat().compareTo("Weekly") == 0) {
+                if (Long.parseLong(d.getTargetTimestamp()) - currentTimeMillis < 1000 * 60 * 60 * 24 * 3 && d.getRepeat().compareTo("Weekly") == 0) {
                     mDataset.add(d);
                     arrayList.add(d);
                 }
@@ -134,10 +141,11 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
 
         layoutManager = new LinearLayoutManager(getActivity());
         recyclerView.setLayoutManager(layoutManager);
-        mAdapter = new MyAdapter(mDataset);
+        mAdapter = new TasksAdapter(mDataset);
         recyclerView.setAdapter(mAdapter);
-        mAdapter.sortData();
         ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+
+            DataModel item;
 
             @Override
             public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
@@ -147,15 +155,26 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
                 final int position = viewHolder.getAdapterPosition();
-                final DataModel item;
                 if (direction == ItemTouchHelper.LEFT) {
                     item = mAdapter.deleteItem(position);
+
                     Intent intent = new Intent(getActivity(), Notification_receiver.class);
                     intent.setAction(item.getTitle() + item.getTargetTimestamp());
                     intent.putExtra("title", item.getTitle());
                     intent.putExtra("content", item.getRemark());
                     PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
                     alarmManager.cancel(pendingIntent);
+
+                    DataModel delItem = new DataModel();
+                    delItem.setTitle(item.getTitle());
+                    delItem.setRepeat(item.getRepeat());
+                    delItem.setTaskid(item.getTaskid());
+                    delItem.setRepeatid(item.getRepeatid());
+                    delItem.setRemark(item.getRemark());
+                    delItem.setType(item.getType());
+                    delItem.setTargetTimestamp(String.valueOf(System.currentTimeMillis()));
+                    SM.sendData(delItem);
+
                     if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
                         Calendar calendar = Calendar.getInstance();
                         calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
@@ -188,17 +207,18 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 } else {
                     item = mAdapter.deleteItem(position);
                     Intent intent = new Intent(getActivity(), Notification_receiver.class);
-                    intent.setAction(item.getTitle() + item.getTargetTimestamp());
-                    intent.putExtra("title", item.getTitle());
-                    intent.putExtra("content", item.getRemark());
+                    intent.setAction(this.item.getTitle() + this.item.getTargetTimestamp());
+                    intent.putExtra("title", this.item.getTitle());
+                    intent.putExtra("content", this.item.getRemark());
                     PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
                     alarmManager.cancel(pendingIntent);
                     Snackbar snackbar = Snackbar.make(viewHolder.itemView, "Task Removed.", Snackbar.LENGTH_LONG);
                     snackbar.setAction("Undo", new View.OnClickListener() {
+
                         @Override
                         public void onClick(View view) {
                             try {
-                                mAdapter.addItem(item);
+                                mAdapter.addItem(item, position);
                             } catch (Exception e) {
                                 Log.e("MainActivity", e.getMessage());
                             }
@@ -298,7 +318,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             }
         });
 
-        mAdapter.setOnItemClickListener(new MyAdapter.ClickListener() {
+        mAdapter.setOnItemClickListener(new TasksAdapter.ClickListener() {
             @Override
             public void onItemClick(int position, View v) {
                 mPos = position;
@@ -325,7 +345,6 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
 
             }
         });
-        return rootview;
     }
 
     protected void submitTask(int position, View rootview) {
@@ -492,6 +511,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         editor.commit();
     }
 
+
     protected void updateDate() {
         String myFormat = "dd/MM/yy (EEEE)";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
@@ -512,4 +532,17 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
     public void onNothingSelected(AdapterView<?> adapterView) {
     }
 
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        try {
+            SM = (SendMessage) getActivity();
+        } catch (ClassCastException e) {
+            throw new ClassCastException("Error in retrieving data.Please try again.");
+        }
+    }
+
+    interface SendMessage {
+        void sendData(DataModel item);
+    }
 }

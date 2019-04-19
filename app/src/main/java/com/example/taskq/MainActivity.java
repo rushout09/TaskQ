@@ -25,9 +25,12 @@ import com.google.firebase.auth.FirebaseAuth;
 
 import static com.example.taskq.ActiveTask.cardView;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ActiveTask.SendMessage {
 
     InputMethodManager imm;
+    TabLayout tabLayout;
+    ViewPager viewPager;
+    TabsAdapter tabsAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,30 +45,13 @@ public class MainActivity extends AppCompatActivity {
 
         android.support.v7.widget.Toolbar toolbar = findViewById(R.id.tool_bar);
         setSupportActionBar(toolbar);
-        TabLayout tabLayout = findViewById(R.id.tab_layout);
-        tabLayout.addTab(tabLayout.newTab().setText("To Do"));
-        tabLayout.addTab(tabLayout.newTab().setText("Logs"));
-        tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
-        final ViewPager viewPager = findViewById(R.id.view_pager);
-        TabsAdapter tabsAdapter = new TabsAdapter(getSupportFragmentManager(), tabLayout.getTabCount());
+
+        viewPager = findViewById(R.id.view_pager);
+        tabsAdapter = new TabsAdapter(getSupportFragmentManager());
         viewPager.setAdapter(tabsAdapter);
-        viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
-        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
-            @Override
-            public void onTabSelected(TabLayout.Tab tab) {
-                viewPager.setCurrentItem(tab.getPosition());
-            }
-
-            @Override
-            public void onTabUnselected(TabLayout.Tab tab) {
-
-            }
-
-            @Override
-            public void onTabReselected(TabLayout.Tab tab) {
-
-            }
-        });
+        tabLayout = findViewById(R.id.tab_layout);
+        tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
+        tabLayout.setupWithViewPager(viewPager);
     }
 
 
@@ -99,8 +85,9 @@ public class MainActivity extends AppCompatActivity {
         if (cardView.getVisibility() == View.VISIBLE) {
             buttonVisible();
             ActiveTask.mPos = -1;
-        } else
+        } else {
             super.onBackPressed();
+        }
     }
 
     public void buttonVisible() {
@@ -124,5 +111,12 @@ public class MainActivity extends AppCompatActivity {
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
         }
+    }
+
+    @Override
+    public void sendData(DataModel item) {
+        String tag = "android:switcher:" + R.id.view_pager + ":" + 1;
+        LoggedTask loggedTask = (LoggedTask) getSupportFragmentManager().findFragmentByTag(tag);
+        loggedTask.addDoneList(item);
     }
 }

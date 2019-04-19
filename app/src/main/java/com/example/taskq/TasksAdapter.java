@@ -17,12 +17,12 @@ import java.util.Date;
 import java.util.Locale;
 
 
-public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
+public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.MyViewHolder> {
     private ArrayList<DataModel> dataSet;
     private static ClickListener clickListener;
 
-    public void setOnItemClickListener(ClickListener clickListener) {
-        MyAdapter.clickListener = clickListener;
+    public TasksAdapter(ArrayList<DataModel> dataSet) {
+        this.dataSet = dataSet;
     }
 
     public interface ClickListener {
@@ -31,8 +31,12 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
         void onItemLongClick(int position, View v);
     }
 
+    public void setOnItemClickListener(ClickListener clickListener) {
+        TasksAdapter.clickListener = clickListener;
+    }
+
     @Override
-    public void onBindViewHolder(@NonNull MyAdapter.MyViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull TasksAdapter.MyViewHolder holder, int position) {
         holder.titleView.setText(dataSet.get(position).getTitle());
         if (dataSet.get(position).getRemark().isEmpty())
             holder.remarkView.setVisibility(View.GONE);
@@ -44,16 +48,22 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
         String datestr = formatter.format(new Date(Long.parseLong(dataSet.get(position).getTargetTimestamp())));
         holder.datetimeView.setText("By " + datestr);
     }
-    public MyAdapter(ArrayList<DataModel> dataSet){
-        this.dataSet = dataSet;
-    }
 
     @NonNull
     @Override
-    public MyAdapter.MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public TasksAdapter.MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_item,parent,false);
         MyViewHolder vh = new MyViewHolder(view);
         return vh;
+    }
+
+    public void addItem(DataModel item, int position) {
+        try {
+            dataSet.add(position, item);
+            notifyDataSetChanged();
+        } catch (Exception e) {
+            Log.e("MainActivity", e.getMessage());
+        }
     }
 
     public void addItem(DataModel item) {
@@ -69,6 +79,8 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
 
     @Override
     public int getItemCount() {
+        if (dataSet == null)
+            return 0;
         return dataSet.size();
     }
 

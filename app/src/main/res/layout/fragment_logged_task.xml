@@ -5,12 +5,15 @@
     android:layout_height="match_parent"
     tools:context=".LoggedTask">
 
-    <!-- TODO: Update blank fragment layout -->
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recycler_logs"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
     <TextView
+        android:id="@+id/tv_logs"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        android:text="Logged Fragment"
-        android:textAppearance="@style/Base.TextAppearance.AppCompat.Large" />
+        android:text="Tap the button to Add a Task\nLeft swipe the task to complete it.\nRight swipe the task to delete it." />
 
 </RelativeLayout>
