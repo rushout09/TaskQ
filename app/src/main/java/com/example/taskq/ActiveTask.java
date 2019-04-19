@@ -13,7 +13,6 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.CardView;
@@ -156,69 +155,53 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
                 position = viewHolder.getAdapterPosition();
-                Snackbar snackbar = Snackbar.make(viewHolder.itemView, "Task Done.", Snackbar.LENGTH_SHORT);
-                snackbar.setAction("Undo", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        mAdapter.notifyDataSetChanged();
-                    }
-                });
-                snackbar.addCallback(new Snackbar.Callback() {
-                    @Override
-                    public void onDismissed(Snackbar transientBottomBar, int event) {
-                        if (event == Snackbar.Callback.DISMISS_EVENT_TIMEOUT) {
-                            item = mAdapter.deleteItem(position);
+                item = mAdapter.deleteItem(position);
+                mAdapter.notifyDataSetChanged();
+                Intent intent = new Intent(getActivity(), Notification_receiver.class);
+                intent.setAction(item.getTitle() + item.getTargetTimestamp());
+                intent.putExtra("title", item.getTitle());
+                intent.putExtra("content", item.getRemark());
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                alarmManager.cancel(pendingIntent);
 
-                            Intent intent = new Intent(getActivity(), Notification_receiver.class);
-                            intent.setAction(item.getTitle() + item.getTargetTimestamp());
-                            intent.putExtra("title", item.getTitle());
-                            intent.putExtra("content", item.getRemark());
-                            PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                            alarmManager.cancel(pendingIntent);
+                DataModel delItem = new DataModel();
+                delItem.setTitle(item.getTitle());
+                delItem.setRepeat(item.getRepeat());
+                delItem.setTaskid(item.getTaskid());
+                delItem.setRepeatid(item.getRepeatid());
+                delItem.setRemark(item.getRemark());
+                delItem.setType(item.getType());
+                delItem.setTargetTimestamp(String.valueOf(System.currentTimeMillis()));
+                SM.sendData(delItem);
 
-                            DataModel delItem = new DataModel();
-                            delItem.setTitle(item.getTitle());
-                            delItem.setRepeat(item.getRepeat());
-                            delItem.setTaskid(item.getTaskid());
-                            delItem.setRepeatid(item.getRepeatid());
-                            delItem.setRemark(item.getRemark());
-                            delItem.setType(item.getType());
-                            delItem.setTargetTimestamp(String.valueOf(System.currentTimeMillis()));
-                            SM.sendData(delItem);
+                if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+                    calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
+                    if (item.getRepeat().compareToIgnoreCase("Daily") == 0)
+                        calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1);
+                    else
+                        calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 6);
+                    calendar.set(Calendar.HOUR_OF_DAY, calendar.get(Calendar.HOUR_OF_DAY));
+                    calendar.set(Calendar.MINUTE, 0);
+                    calendar.set(Calendar.SECOND, 0);
+                    calendar.set(Calendar.MILLISECOND, 0);
+                    item.setTargetTimestamp(String.valueOf(calendar.getTimeInMillis()));
+                    mInvisible.add(item);
 
-                            if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
-                                Calendar calendar = Calendar.getInstance();
-                                calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
-                                calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
-                                if (item.getRepeat().compareToIgnoreCase("Daily") == 0)
-                                    calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1);
-                                else
-                                    calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 6);
-                                calendar.set(Calendar.HOUR_OF_DAY, calendar.get(Calendar.HOUR_OF_DAY));
-                                calendar.set(Calendar.MINUTE, 0);
-                                calendar.set(Calendar.SECOND, 0);
-                                calendar.set(Calendar.MILLISECOND, 0);
-                                item.setTargetTimestamp(String.valueOf(calendar.getTimeInMillis()));
-                                mInvisible.add(item);
+                    intent = new Intent(getActivity(), Notification_receiver.class);
+                    intent.setAction(item.getTitle() + item.getTargetTimestamp());
+                    intent.putExtra("title", item.getTitle());
+                    intent.putExtra("content", item.getRemark());
+                    pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                    alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(item.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
+                }
+                if (mDataset == null || mDataset.isEmpty()) {
+                    MainHintTV.setVisibility(View.VISIBLE);
+                } else {
+                    MainHintTV.setVisibility(View.GONE);
+                }
 
-                                intent = new Intent(getActivity(), Notification_receiver.class);
-                                intent.setAction(item.getTitle() + item.getTargetTimestamp());
-                                intent.putExtra("title", item.getTitle());
-                                intent.putExtra("content", item.getRemark());
-                                pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                                alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(item.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
-                            }
-
-                            if (mDataset == null || mDataset.isEmpty()) {
-                                MainHintTV.setVisibility(View.VISIBLE);
-                            } else {
-                                MainHintTV.setVisibility(View.GONE);
-                            }
-
-                        }
-                    }
-                });
-                snackbar.show();
                 /* else {
                     item = mAdapter.deleteItem(position);
                     Intent intent = new Intent(getActivity(), Notification_receiver.class);
