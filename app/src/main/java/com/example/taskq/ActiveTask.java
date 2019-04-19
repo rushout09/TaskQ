@@ -146,6 +146,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
 
             DataModel item;
+            int position;
 
             @Override
             public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
@@ -154,7 +155,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
 
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-                final int position = viewHolder.getAdapterPosition();
+                position = viewHolder.getAdapterPosition();
                 Snackbar snackbar = Snackbar.make(viewHolder.itemView, "Task Done.", Snackbar.LENGTH_SHORT);
                 snackbar.setAction("Undo", new View.OnClickListener() {
                     @Override
@@ -252,14 +253,14 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
 
                 new RecyclerViewSwipeDecorator.Builder(getContext(), c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
-                        /*.addSwipeLeftBackgroundColor(ContextCompat.getColor(getContext(), R.color.recycler_view_item_swipe_left_background))
-                        .addSwipeLeftActionIcon(R.drawable.ic_archive_white_24dp)*/
+                        .addSwipeLeftBackgroundColor(ContextCompat.getColor(getContext(), R.color.recycler_view_item_swipe_left_background))
+                        .addSwipeLeftActionIcon(R.drawable.ic_archive_white_24dp)
                         .addSwipeRightBackgroundColor(ContextCompat.getColor(getContext(), R.color.recycler_view_item_swipe_left_background))
                         .addSwipeRightActionIcon(R.drawable.ic_archive_white_24dp)
                         .addSwipeRightLabel("Done!")
                         .setSwipeRightLabelColor(Color.WHITE)
-                        /*.addSwipeLeftLabel("Done!")
-                        .setSwipeLeftLabelColor(Color.WHITE)*/
+                        .addSwipeLeftLabel("Done!")
+                        .setSwipeLeftLabelColor(Color.WHITE)
                         .create()
                         .decorate();
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
@@ -405,7 +406,8 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 intent.putExtra("content", remarkStr);
                 PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
                 alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(newTask.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
-                mDataset.add(newTask);
+                mAdapter.addItem(newTask);
+                mAdapter.sortData();
                 mAdapter.notifyDataSetChanged();
                 Toast.makeText(getContext(), "Task Added!", Toast.LENGTH_SHORT).show();
 
@@ -440,6 +442,10 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 PendingIntent pendingIntent = PendingIntent.getBroadcast(getContext(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
                 alarmManager.cancel(pendingIntent);
 
+                int f = 0;
+                if (currentTask.getTargetTimestamp().compareToIgnoreCase(timestampStr) != 0) {
+                    f = 1;
+                }
                 currentTask.setTargetTimestamp(timestampStr);
                 currentTask.setType(TypeStr);
                 currentTask.setRemark(remarkStr);
@@ -454,6 +460,10 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 intent.putExtra("content", remarkStr);
                 pendingIntent = PendingIntent.getBroadcast(getContext(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
                 alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(currentTask.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
+
+                if (f == 1) {
+                    mAdapter.sortData();
+                }
                 mAdapter.notifyDataSetChanged();
                 Toast.makeText(getContext(), "Task Updated!", Toast.LENGTH_SHORT).show();
 
