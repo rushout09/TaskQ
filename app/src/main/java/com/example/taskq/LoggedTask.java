@@ -1,6 +1,7 @@
 package com.example.taskq;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -139,17 +140,35 @@ public class LoggedTask extends Fragment {
                             return true;
                         } else if (itemId == R.id.undoLogOption) {
                             DataModel item = LoggedTaskList.get(position);
+                            if (Long.parseLong(item.getDoneTimestamp()) < (System.currentTimeMillis() - 1000 * 60 * 15)) {
+                                Toast.makeText(getContext(), "You cannot undo any task after 15 minutes of its completion.", Toast.LENGTH_SHORT).show();
+                                return true;
+                            }
+                            int currentStreak = item.getCurrentStreak();
+                            item.setCurrentStreak(currentStreak - 1);
                             LoggedTaskList.remove(position);
                             mAdapter.notifyItemRemoved(position);
-                            SM.sendDataToActive(item);
+                            SM.sendDataToActive(item, true);
                             Toast.makeText(getContext(), "Task Moved to Todo", Toast.LENGTH_SHORT).show();
                             toggleBGView();
                             return true;
                         } else if (itemId == R.id.redoLogOption) {
                             DataModel item = LoggedTaskList.get(position);
-                            SM.sendDataToActive(item);
+                            SM.sendDataToActive(item, false);
                             Toast.makeText(getContext(), "Task Added to Todo", Toast.LENGTH_SHORT).show();
                             return true;
+                        } else if (itemId == R.id.viewGraphOption) {
+                            if (LoggedTaskList.get(pos).getRepeat().compareTo("Daily") == 0) {
+                                DataModel item = LoggedTaskList.get(pos);
+                                Intent intent = new Intent(getContext(), GraphActivity.class);
+                                intent.putExtra("currentStreak", item.getCurrentStreak());
+                                intent.putExtra("maxStreak", item.getMaxStreak());
+                                intent.putExtra("title", item.getTitle());
+                                startActivity(intent);
+                            } else {
+                                Toast.makeText(getContext(), "Streak is only available for daily tasks.", Toast.LENGTH_SHORT).show();
+                            }
+
                         }
                         return false;
                     }
@@ -167,6 +186,9 @@ public class LoggedTask extends Fragment {
 
     protected void addDoneList(DataModel model) {
         LoggedTaskList.add(model);
+        if (LoggedTaskList.size() == 1000) {
+            LoggedTaskList.remove(0);
+        }
         mAdapter.notifyDataSetChanged();
         if (LoggedTaskList == null || LoggedTaskList.isEmpty()) {
             LoggedTaskList = new ArrayList<DataModel>();
@@ -227,7 +249,7 @@ public class LoggedTask extends Fragment {
     }
 
     interface SendMessageToActive {
-        void sendDataToActive(DataModel item);
+        void sendDataToActive(DataModel item, Boolean isUndo);
     }
 
 }

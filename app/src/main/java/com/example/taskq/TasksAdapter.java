@@ -48,7 +48,7 @@ public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.MyViewHolder
         SimpleDateFormat formatter = new SimpleDateFormat("hh:mm a, E (dd/MM)", Locale.getDefault());
         String datestr = formatter.format(new Date(Long.parseLong(dataSet.get(position).getTargetTimestamp())));
         holder.datetimeView.setText("Complete By " + datestr);
-        holder.repeatTV.setText("Repeat: " + dataSet.get(position).getRepeat());
+        holder.repeatTV.setText("Repeat: " + dataSet.get(position).getRepeat() + " Type: " + dataSet.get(position).getType());
     }
 
     @NonNull

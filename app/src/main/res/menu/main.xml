@@ -4,8 +4,16 @@
     <item
         android:id="@+id/sign_out"
         android:title="Sign Out"
+        android:orderInCategory="2"
+        app:showAsAction="ifRoom|withText">
+        Sign Out
+    </item>
+    <item
+        android:id="@+id/pie_chart"
         android:orderInCategory="1"
-        app:showAsAction="always">Sign Out
+        android:title="Stats"
+        app:showAsAction="always|withText">
+        Stats
     </item>
 
 </menu>

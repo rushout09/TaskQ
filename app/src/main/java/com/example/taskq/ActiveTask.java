@@ -253,7 +253,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             private int pos;
             private RecyclerView.ViewHolder vh;
             @Override
-            public void onItemLongClick(int position, View v, RecyclerView.ViewHolder viewHolder) {
+            public void onItemLongClick(final int position, View v, RecyclerView.ViewHolder viewHolder) {
                 pos = position;
                 vh = viewHolder;
                 PopupMenu popupMenu = new PopupMenu(getContext(), v);
@@ -261,6 +261,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                     @Override
                     public boolean onMenuItemClick(MenuItem menuItem) {
+                        buttonVisible();
                         int itemId = menuItem.getItemId();
                         if (itemId == R.id.deleteTaskOption) {
                             deleteTask(pos);
@@ -272,6 +273,18 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                         } else if (itemId == R.id.editTaskOption) {
                             mPos = pos;
                             cardVisible(mPos);
+                        } else if (itemId == R.id.viewGraphOption) {
+                            if (mDataset.get(pos).getRepeat().compareTo("Daily") == 0) {
+                                DataModel item = mDataset.get(pos);
+                                Intent intent = new Intent(getContext(), GraphActivity.class);
+                                intent.putExtra("currentStreak", item.getCurrentStreak());
+                                intent.putExtra("maxStreak", item.getMaxStreak());
+                                intent.putExtra("title", item.getTitle());
+                                startActivity(intent);
+                            } else {
+                                Toast.makeText(getContext(), "Streak is only available for daily tasks.", Toast.LENGTH_SHORT).show();
+                            }
+
                         }
                         return false;
                     }
@@ -490,6 +503,21 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         DataModel item = mAdapter.deleteItem(position);
         mAdapter.notifyItemRemoved(position);
 
+        if (item.getDoneTimestamp().compareTo("0") == 0 || (System.currentTimeMillis() - Long.parseLong(item.getDoneTimestamp()) <= 1000 * 60 * 60 * 24)) {
+            int currentStreak = item.getCurrentStreak();
+            currentStreak++;
+            item.setCurrentStreak(currentStreak);
+        } else {
+            int maxStreak = item.getMaxStreakValue();
+            int currentStreak = item.getCurrentStreak();
+            if (maxStreak < currentStreak) {
+                maxStreak = currentStreak;
+            }
+            currentStreak = 1;
+            item.setCurrentStreak(currentStreak);
+            item.insertMaxStreak(maxStreak);
+        }
+
         DataModel delItem = new DataModel();
         delItem.setTitle(item.getTitle());
         delItem.setRepeat(item.getRepeat());
@@ -497,6 +525,8 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         delItem.setRepeatId(item.getRepeatId());
         delItem.setRemark(item.getRemark());
         delItem.setType(item.getType());
+        delItem.setMaxStreak(item.getMaxStreak());
+        delItem.setCurrentStreak(item.getCurrentStreak());
         delItem.setTargetTimestamp(item.getTargetTimestamp());
         delItem.setDoneTimestamp(String.valueOf(System.currentTimeMillis()));
         SM.sendDataToLog(delItem);

@@ -1,5 +1,7 @@
 package com.example.taskq;
 
+import java.util.ArrayList;
+
 public class DataModel {
     private String mTitle;
     private String mRemark;
@@ -10,6 +12,9 @@ public class DataModel {
     private String mRepeatId;
     private String mTargetTimestamp;
     private String mDoneTimestamp;
+    private ArrayList<Integer> maxStreak;
+    private int streakCount;
+    private int currentStreak;
 
     public DataModel(){}
 
@@ -22,6 +27,12 @@ public class DataModel {
         mRepeatId = Repeatid;
         mTypeId = Taskid;
         mTargetTimestamp = TargetTimestamp;
+        streakCount = 1;
+        maxStreak = new ArrayList<Integer>();
+        maxStreak.add(0);
+        currentStreak = 0;
+        mDoneTimestamp = "0";
+
     }
 
     public String getTitle() {
@@ -55,6 +66,35 @@ public class DataModel {
 
     public String getTaskId() {
         return mTypeId;
+    }
+
+    public int getMaxStreakValue() {
+        return maxStreak.get(streakCount);
+    }
+
+    public int getCurrentStreak() {
+        return currentStreak;
+    }
+
+    public void setCurrentStreak(int currentStreak) {
+        this.currentStreak = currentStreak;
+    }
+
+    public ArrayList<Integer> getMaxStreak() {
+        return maxStreak;
+    }
+
+    public void setMaxStreak(ArrayList<Integer> maxStreak) {
+        this.maxStreak = maxStreak;
+    }
+
+    public void insertMaxStreak(int maxStreak) {
+        this.maxStreak.add(maxStreak);
+        streakCount++;
+        if (streakCount == 14) {
+            this.maxStreak.remove(0);
+            streakCount--;
+        }
     }
 
     public void setTargetTimestamp(String mTargetTimestamp) {

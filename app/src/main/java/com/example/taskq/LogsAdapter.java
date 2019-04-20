@@ -45,7 +45,7 @@ public class LogsAdapter extends RecyclerView.Adapter<LogsAdapter.MyViewHolder> 
         SimpleDateFormat formatter = new SimpleDateFormat("hh:mm a, E (dd/MM)", Locale.getDefault());
         String datestr = formatter.format(new Date(Long.parseLong(dataSet.get(position).getDoneTimestamp())));
         holder.datetimeView.setText("Completed On " + datestr);
-        holder.repeatTv.setText("Repeat: " + dataSet.get(position).getRepeat());
+        holder.repeatTv.setText("Repeat: " + dataSet.get(position).getRepeat() + " Type: " + dataSet.get(position).getType());
     }
 
     @Override

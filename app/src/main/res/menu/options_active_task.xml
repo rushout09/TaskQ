@@ -10,4 +10,7 @@
     <item
         android:id="@+id/editTaskOption"
         android:title="Edit Task" />
+    <item
+        android:id="@+id/viewGraphOption"
+        android:title="View Streak Graph" />
 </menu>

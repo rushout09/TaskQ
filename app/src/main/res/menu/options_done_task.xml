@@ -9,5 +9,8 @@
     <item
         android:id="@+id/deleteLogOption"
         android:title="Delete from Log" />
+    <item
+        android:id="@+id/viewGraphOption"
+        android:title="View Streak Graph" />
 
 </menu>
