@@ -47,7 +47,8 @@ public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.MyViewHolder
         }
         SimpleDateFormat formatter = new SimpleDateFormat("hh:mm a, E (dd/MM)", Locale.getDefault());
         String datestr = formatter.format(new Date(Long.parseLong(dataSet.get(position).getTargetTimestamp())));
-        holder.datetimeView.setText("By " + datestr);
+        holder.datetimeView.setText("Complete By " + datestr);
+        holder.repeatTV.setText("Repeat: " + dataSet.get(position).getRepeat());
     }
 
     @NonNull
@@ -130,6 +131,7 @@ public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.MyViewHolder
         protected TextView remarkView;
         protected CardView cardView;
         protected TextView datetimeView;
+        protected TextView repeatTV;
 
         protected MyViewHolder(View view) {
             super(view);
@@ -139,6 +141,7 @@ public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.MyViewHolder
             this.remarkView = view.findViewById(R.id.remark_view);
             this.cardView = view.findViewById(R.id.cardview);
             this.datetimeView = view.findViewById(R.id.datetime_TV);
+            this.repeatTV = view.findViewById(R.id.repeatItem_tv);
 
         }
 

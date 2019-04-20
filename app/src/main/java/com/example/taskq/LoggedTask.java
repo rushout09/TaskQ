@@ -14,9 +14,12 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.PopupMenu;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -36,6 +39,9 @@ public class LoggedTask extends Fragment {
     private SharedPreferences shref;
     private TextView BGTV;
     private FirebaseUser user;
+    private int position;
+    private DataModel item;
+    private SendMessageToActive SM;
 
     @Nullable
     @Override
@@ -86,59 +92,8 @@ public class LoggedTask extends Fragment {
 
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-                position = viewHolder.getAdapterPosition();
-                item = LoggedTaskList.get(position);
-                LoggedTaskList.remove(position);
-                mAdapter.notifyItemRemoved(position);
+                deleteLoggedTask(viewHolder, rootview);
 
-                Snackbar snackbar = Snackbar.make(rootview, "Task removed from Log", Snackbar.LENGTH_SHORT);
-                snackbar.setAction("Undo", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        LoggedTaskList.add(position, item);
-                        mAdapter.notifyItemInserted(position);
-                        if (LoggedTaskList == null || LoggedTaskList.isEmpty()) {
-                            BGTV.setVisibility(View.VISIBLE);
-                        } else {
-                            BGTV.setVisibility(View.GONE);
-                        }
-                    }
-                });
-
-                snackbar.show();
-                if (LoggedTaskList == null || LoggedTaskList.isEmpty()) {
-                    BGTV.setVisibility(View.VISIBLE);
-                } else {
-                    BGTV.setVisibility(View.GONE);
-                }
-
-                /* else {
-                    item = mAdapter.deleteItem(position);
-                    Intent intent = new Intent(getActivity(), Notification_receiver.class);
-                    intent.setAction(this.item.getTitle() + this.item.getTargetTimestamp());
-                    intent.putExtra("title", this.item.getTitle());
-                    intent.putExtra("content", this.item.getRemark());
-                    PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                    alarmManager.cancel(pendingIntent);
-                    Snackbar snackbar = Snackbar.make(viewHolder.itemView, "Task Removed.", Snackbar.LENGTH_LONG);
-                    snackbar.setAction("Undo", new View.OnClickListener() {
-
-                        @Override
-                        public void onClick(View view) {
-                            try {
-                                mAdapter.addItem(item, position);
-                            } catch (Exception e) {
-                                Log.e("MainActivity", e.getMessage());
-                            }
-                        }
-                    });
-                    snackbar.show();
-                    if (mDataset == null || mDataset.isEmpty()) {
-                        MainHintTV.setVisibility(View.VISIBLE);
-                    } else {
-                        MainHintTV.setVisibility(View.GONE);
-                    }
-                }*/
             }
             // You must use @RecyclerViewSwipeDecorator inside the onChildDraw method
 
@@ -165,8 +120,41 @@ public class LoggedTask extends Fragment {
 
 
         mAdapter.setOnItemClickListener(new LogsAdapter.ClickListener() {
+            View view;
+            RecyclerView.ViewHolder vh;
+            int pos;
             @Override
-            public void onItemLongClick(int position, View v) {
+            public void onItemLongClick(final int position, View v, RecyclerView.ViewHolder viewHolder) {
+                view = v;
+                vh = viewHolder;
+                pos = position;
+                PopupMenu popupMenu = new PopupMenu(getContext(), v);
+                popupMenu.inflate(R.menu.options_done_task);
+                popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem menuItem) {
+                        int itemId = menuItem.getItemId();
+                        if (itemId == R.id.deleteLogOption) {
+                            deleteLoggedTask(vh, view);
+                            return true;
+                        } else if (itemId == R.id.undoLogOption) {
+                            DataModel item = LoggedTaskList.get(position);
+                            LoggedTaskList.remove(position);
+                            mAdapter.notifyItemRemoved(position);
+                            SM.sendDataToActive(item);
+                            Toast.makeText(getContext(), "Task Moved to Todo", Toast.LENGTH_SHORT).show();
+                            toggleBGView();
+                            return true;
+                        } else if (itemId == R.id.redoLogOption) {
+                            DataModel item = LoggedTaskList.get(position);
+                            SM.sendDataToActive(item);
+                            Toast.makeText(getContext(), "Task Added to Todo", Toast.LENGTH_SHORT).show();
+                            return true;
+                        }
+                        return false;
+                    }
+                });
+                popupMenu.show();
 
             }
 
@@ -198,6 +186,48 @@ public class LoggedTask extends Fragment {
         editor.remove(user.getUid()).apply();
         editor.putString(user.getUid(), json);
         editor.commit();
+    }
+
+    public void deleteLoggedTask(RecyclerView.ViewHolder viewHolder, View rootview) {
+        position = viewHolder.getAdapterPosition();
+        item = LoggedTaskList.get(position);
+        LoggedTaskList.remove(position);
+        mAdapter.notifyItemRemoved(position);
+
+        Snackbar snackbar = Snackbar.make(rootview, "Task removed from Log", Snackbar.LENGTH_SHORT);
+        snackbar.setAction("Undo", new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                LoggedTaskList.add(position, item);
+                mAdapter.notifyItemInserted(position);
+                toggleBGView();
+            }
+        });
+
+        snackbar.show();
+        toggleBGView();
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        try {
+            SM = (LoggedTask.SendMessageToActive) getActivity();
+        } catch (ClassCastException e) {
+            throw new ClassCastException("Error in retrieving data.Please try again.");
+        }
+    }
+
+    public void toggleBGView() {
+        if (LoggedTaskList == null || LoggedTaskList.isEmpty()) {
+            BGTV.setVisibility(View.VISIBLE);
+        } else {
+            BGTV.setVisibility(View.GONE);
+        }
+    }
+
+    interface SendMessageToActive {
+        void sendDataToActive(DataModel item);
     }
 
 }

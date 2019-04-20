@@ -6,9 +6,10 @@ public class DataModel {
 
     private String mType;
     private String mRepeat;
-    private String mTaskid;
-    private String mRepeatid;
+    private String mTypeId;
+    private String mRepeatId;
     private String mTargetTimestamp;
+    private String mDoneTimestamp;
 
     public DataModel(){}
 
@@ -18,8 +19,8 @@ public class DataModel {
         mRemark = Remark;
         mType = Type;
         mRepeat = Repeat;
-        mRepeatid = Repeatid;
-        mTaskid = Taskid;
+        mRepeatId = Repeatid;
+        mTypeId = Taskid;
         mTargetTimestamp = TargetTimestamp;
     }
 
@@ -40,16 +41,20 @@ public class DataModel {
         return mRepeat;
     }
 
-    public String getRepeatid() {
-        return mRepeatid;
+    public String getRepeatId() {
+        return mRepeatId;
     }
 
-    public String getTaskid() {
-        return mTaskid;
+    public void setRepeatId(String mRepeatid) {
+        this.mRepeatId = mRepeatid;
     }
 
     public String getTargetTimestamp() {
         return mTargetTimestamp;
+    }
+
+    public String getTaskId() {
+        return mTypeId;
     }
 
     public void setTargetTimestamp(String mTargetTimestamp) {
@@ -72,11 +77,15 @@ public class DataModel {
         this.mRepeat = mRepeat;
     }
 
-    public void setRepeatid(String mRepeatid) {
-        this.mRepeatid = mRepeatid;
+    public String getDoneTimestamp() {
+        return mDoneTimestamp;
     }
 
-    public void setTaskid(String mTaskid) {
-        this.mTaskid = mTaskid;
+    public void setDoneTimestamp(String mDoneTimestamp) {
+        this.mDoneTimestamp = mDoneTimestamp;
+    }
+
+    public void setTypeId(String mTaskid) {
+        this.mTypeId = mTaskid;
     }
 }

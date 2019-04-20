@@ -43,8 +43,9 @@ public class LogsAdapter extends RecyclerView.Adapter<LogsAdapter.MyViewHolder> 
             holder.remarkView.setText(dataSet.get(position).getRemark());
         }
         SimpleDateFormat formatter = new SimpleDateFormat("hh:mm a, E (dd/MM)", Locale.getDefault());
-        String datestr = formatter.format(new Date(Long.parseLong(dataSet.get(position).getTargetTimestamp())));
-        holder.datetimeView.setText("On" + " " + datestr);
+        String datestr = formatter.format(new Date(Long.parseLong(dataSet.get(position).getDoneTimestamp())));
+        holder.datetimeView.setText("Completed On " + datestr);
+        holder.repeatTv.setText("Repeat: " + dataSet.get(position).getRepeat());
     }
 
     @Override
@@ -57,7 +58,7 @@ public class LogsAdapter extends RecyclerView.Adapter<LogsAdapter.MyViewHolder> 
     public interface ClickListener {
         void onItemClick(int position, View v);
 
-        void onItemLongClick(int position, View v);
+        void onItemLongClick(int position, View v, RecyclerView.ViewHolder viewHolder);
     }
 
     protected static class MyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
@@ -65,6 +66,7 @@ public class LogsAdapter extends RecyclerView.Adapter<LogsAdapter.MyViewHolder> 
         protected TextView remarkView;
         protected CardView cardView;
         protected TextView datetimeView;
+        protected TextView repeatTv;
 
         protected MyViewHolder(View view) {
             super(view);
@@ -74,7 +76,7 @@ public class LogsAdapter extends RecyclerView.Adapter<LogsAdapter.MyViewHolder> 
             this.remarkView = view.findViewById(R.id.remark_view);
             this.cardView = view.findViewById(R.id.cardview);
             this.datetimeView = view.findViewById(R.id.datetime_TV);
-
+            this.repeatTv = view.findViewById(R.id.repeatItem_tv);
         }
 
         @Override
@@ -84,7 +86,7 @@ public class LogsAdapter extends RecyclerView.Adapter<LogsAdapter.MyViewHolder> 
 
         @Override
         public boolean onLongClick(View view) {
-            clickListener.onItemLongClick(getAdapterPosition(), view);
+            clickListener.onItemLongClick(getAdapterPosition(), view, this);
             return false;
         }
 

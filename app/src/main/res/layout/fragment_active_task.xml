@@ -21,7 +21,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        android:text="Tap the button to Add a Task\nLeft swipe the task to complete it.\nRight swipe the task to delete it." />
+        android:text="@string/activeTaskBG" />
 
     <ScrollView
         android:id="@+id/scrollView"

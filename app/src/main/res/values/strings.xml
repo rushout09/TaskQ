@@ -2,4 +2,8 @@
     <string name="app_name">TaskQ</string>
 
     <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="activeTaskBG">Tap the button to Add a Task\nRight swipe a task to complete it.\nSwipe left to see your logs.\nLong Press a Task to see options.</string>
+
+    <string name="doneTaskBG">Left swipe a Log to delete it.\nSwipe Right to see your Todos.\nLong Press a Log to see options.</string>
 </resources>

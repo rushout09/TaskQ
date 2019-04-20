@@ -62,7 +62,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
     SharedPreferences shref;
     InputMethodManager imm;
     private RecyclerView recyclerView;
-    SendMessage SM;
+    private SendMessageToLog SM;
     private RecyclerView.LayoutManager layoutManager;
     private ArrayList<DataModel> mDataset;
     private ArrayList<DataModel> mInvisible;
@@ -333,16 +333,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             } else {
                 timestampStr = String.valueOf(calendar.getTimeInMillis());
                 DataModel newTask = new DataModel(titleStr, remarkStr, TypeStr, RepeatStr, TypeInt, RepeatInt, timestampStr);
-                Intent intent = new Intent(getActivity(), Notification_receiver.class);
-                intent.setAction(newTask.getTitle() + newTask.getTargetTimestamp());
-                intent.putExtra("title", titleStr);
-                intent.putExtra("content", remarkStr);
-                PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(newTask.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
-                mAdapter.addItem(newTask);
-                mAdapter.sortData();
-                mAdapter.notifyDataSetChanged();
-                Toast.makeText(getContext(), "Task Added!", Toast.LENGTH_SHORT).show();
+                addTaskList(newTask);
 
                 buttonVisible();
                 toggleBackgroundHint();
@@ -378,8 +369,8 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 currentTask.setTargetTimestamp(timestampStr);
                 currentTask.setType(TypeStr);
                 currentTask.setRemark(remarkStr);
-                currentTask.setRepeatid(repeatInt);
-                currentTask.setTaskid(TypeInt);
+                currentTask.setRepeatId(repeatInt);
+                currentTask.setTypeId(TypeInt);
                 currentTask.setRepeat(repeatStr);
                 currentTask.setTitle(titleStr);
 
@@ -409,10 +400,10 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             calendar.setTimeInMillis(Long.parseLong(mDataset.get(position).getTargetTimestamp()));
             Title.setText(mDataset.get(position).getTitle());
             Remark.setText(mDataset.get(position).getRemark());
-            Type.check(Integer.parseInt(mDataset.get(position).getTaskid()));
-            Repeat_RG.check(Integer.parseInt(mDataset.get(position).getRepeatid()));
-            if (mDataset.get(position).getRepeatid() != null)
-                Repeat_RG.check(Integer.parseInt(mDataset.get(position).getRepeatid()));
+            Type.check(Integer.parseInt(mDataset.get(position).getTaskId()));
+            Repeat_RG.check(Integer.parseInt(mDataset.get(position).getRepeatId()));
+            if (mDataset.get(position).getRepeatId() != null)
+                Repeat_RG.check(Integer.parseInt(mDataset.get(position).getRepeatId()));
             SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/YY", Locale.getDefault());
             String datestr = dateFormat.format(new Date(Long.parseLong(mDataset.get(position).getTargetTimestamp())));
             SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a", Locale.getDefault());
@@ -488,21 +479,9 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
     public void onAttach(Context context) {
         super.onAttach(context);
         try {
-            SM = (SendMessage) getActivity();
+            SM = (SendMessageToLog) getActivity();
         } catch (ClassCastException e) {
             throw new ClassCastException("Error in retrieving data.Please try again.");
-        }
-    }
-
-    interface SendMessage {
-        void sendData(DataModel item);
-    }
-
-    public void toggleBackgroundHint() {
-        if (mDataset == null || mDataset.isEmpty()) {
-            MainHintTV.setVisibility(View.VISIBLE);
-        } else {
-            MainHintTV.setVisibility(View.GONE);
         }
     }
 
@@ -514,12 +493,13 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         DataModel delItem = new DataModel();
         delItem.setTitle(item.getTitle());
         delItem.setRepeat(item.getRepeat());
-        delItem.setTaskid(item.getTaskid());
-        delItem.setRepeatid(item.getRepeatid());
+        delItem.setTypeId(item.getTaskId());
+        delItem.setRepeatId(item.getRepeatId());
         delItem.setRemark(item.getRemark());
         delItem.setType(item.getType());
-        delItem.setTargetTimestamp(String.valueOf(System.currentTimeMillis()));
-        SM.sendData(delItem);
+        delItem.setTargetTimestamp(item.getTargetTimestamp());
+        delItem.setDoneTimestamp(String.valueOf(System.currentTimeMillis()));
+        SM.sendDataToLog(delItem);
 
         if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
             Calendar calendar = Calendar.getInstance();
@@ -553,6 +533,28 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         Toast.makeText(getContext(), "Task done!", Toast.LENGTH_SHORT).show();
     }
 
+    public void toggleBackgroundHint() {
+        if (mDataset == null || mDataset.isEmpty()) {
+            MainHintTV.setVisibility(View.VISIBLE);
+        } else {
+            MainHintTV.setVisibility(View.GONE);
+        }
+    }
+
+    public void addTaskList(DataModel newTask) {
+        Intent intent = new Intent(getActivity(), Notification_receiver.class);
+        intent.setAction(newTask.getTitle() + newTask.getTargetTimestamp());
+        intent.putExtra("title", newTask.getTitle());
+        intent.putExtra("content", newTask.getRemark());
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(newTask.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
+        mAdapter.addItem(newTask);
+        mAdapter.sortData();
+        mAdapter.notifyDataSetChanged();
+        Toast.makeText(getContext(), "Task Added!", Toast.LENGTH_SHORT).show();
+        toggleBackgroundHint();
+    }
+
     public void deleteTask(int pos) {
         DataModel item = mAdapter.deleteItem(pos);
         mAdapter.notifyItemRemoved(pos);
@@ -564,5 +566,9 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         alarmManager.cancel(pendingIntent);
 
         Toast.makeText(getContext(), "Task Permanently Deleted!", Toast.LENGTH_SHORT).show();
+    }
+
+    interface SendMessageToLog {
+        void sendDataToLog(DataModel item);
     }
 }

@@ -25,7 +25,7 @@ import com.google.firebase.auth.FirebaseAuth;
 
 import static com.example.taskq.ActiveTask.cardView;
 
-public class MainActivity extends AppCompatActivity implements ActiveTask.SendMessage {
+public class MainActivity extends AppCompatActivity implements ActiveTask.SendMessageToLog, LoggedTask.SendMessageToActive {
 
     InputMethodManager imm;
     TabLayout tabLayout;
@@ -114,9 +114,16 @@ public class MainActivity extends AppCompatActivity implements ActiveTask.SendMe
     }
 
     @Override
-    public void sendData(DataModel item) {
+    public void sendDataToLog(DataModel item) {
         String tag = "android:switcher:" + R.id.view_pager + ":" + 1;
         LoggedTask loggedTask = (LoggedTask) getSupportFragmentManager().findFragmentByTag(tag);
         loggedTask.addDoneList(item);
+    }
+
+    @Override
+    public void sendDataToActive(DataModel item) {
+        String tag = "android:switcher:" + R.id.view_pager + ":" + 0;
+        ActiveTask activeTask = (ActiveTask) getSupportFragmentManager().findFragmentByTag(tag);
+        activeTask.addTaskList(item);
     }
 }
