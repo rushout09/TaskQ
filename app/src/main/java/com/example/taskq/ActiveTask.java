@@ -21,6 +21,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -29,6 +30,7 @@ import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -144,9 +146,6 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         recyclerView.setAdapter(mAdapter);
         ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
 
-            DataModel item;
-            int position;
-
             @Override
             public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
                 return false;
@@ -154,82 +153,10 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
 
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-                position = viewHolder.getAdapterPosition();
-                item = mAdapter.deleteItem(position);
-                mAdapter.notifyDataSetChanged();
-                Intent intent = new Intent(getActivity(), Notification_receiver.class);
-                intent.setAction(item.getTitle() + item.getTargetTimestamp());
-                intent.putExtra("title", item.getTitle());
-                intent.putExtra("content", item.getRemark());
-                PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                alarmManager.cancel(pendingIntent);
-
-                DataModel delItem = new DataModel();
-                delItem.setTitle(item.getTitle());
-                delItem.setRepeat(item.getRepeat());
-                delItem.setTaskid(item.getTaskid());
-                delItem.setRepeatid(item.getRepeatid());
-                delItem.setRemark(item.getRemark());
-                delItem.setType(item.getType());
-                delItem.setTargetTimestamp(String.valueOf(System.currentTimeMillis()));
-                SM.sendData(delItem);
-
-                if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
-                    Calendar calendar = Calendar.getInstance();
-                    calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
-                    calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
-                    if (item.getRepeat().compareToIgnoreCase("Daily") == 0)
-                        calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1);
-                    else
-                        calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 6);
-                    calendar.set(Calendar.HOUR_OF_DAY, calendar.get(Calendar.HOUR_OF_DAY));
-                    calendar.set(Calendar.MINUTE, 0);
-                    calendar.set(Calendar.SECOND, 0);
-                    calendar.set(Calendar.MILLISECOND, 0);
-                    item.setTargetTimestamp(String.valueOf(calendar.getTimeInMillis()));
-                    mInvisible.add(item);
-
-                    intent = new Intent(getActivity(), Notification_receiver.class);
-                    intent.setAction(item.getTitle() + item.getTargetTimestamp());
-                    intent.putExtra("title", item.getTitle());
-                    intent.putExtra("content", item.getRemark());
-                    pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                    alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(item.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
-                }
-                if (mDataset == null || mDataset.isEmpty()) {
-                    MainHintTV.setVisibility(View.VISIBLE);
-                } else {
-                    MainHintTV.setVisibility(View.GONE);
-                }
-
-                /* else {
-                    item = mAdapter.deleteItem(position);
-                    Intent intent = new Intent(getActivity(), Notification_receiver.class);
-                    intent.setAction(this.item.getTitle() + this.item.getTargetTimestamp());
-                    intent.putExtra("title", this.item.getTitle());
-                    intent.putExtra("content", this.item.getRemark());
-                    PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                    alarmManager.cancel(pendingIntent);
-                    Snackbar snackbar = Snackbar.make(viewHolder.itemView, "Task Removed.", Snackbar.LENGTH_LONG);
-                    snackbar.setAction("Undo", new View.OnClickListener() {
-
-                        @Override
-                        public void onClick(View view) {
-                            try {
-                                mAdapter.addItem(item, position);
-                            } catch (Exception e) {
-                                Log.e("MainActivity", e.getMessage());
-                            }
-                        }
-                    });
-                    snackbar.show();
-                    if (mDataset == null || mDataset.isEmpty()) {
-                        MainHintTV.setVisibility(View.VISIBLE);
-                    } else {
-                        MainHintTV.setVisibility(View.GONE);
-                    }
-                }*/
+                markAsDone(viewHolder);
+                toggleBackgroundHint();
             }
+
             // You must use @RecyclerViewSwipeDecorator inside the onChildDraw method
 
             @Override
@@ -323,8 +250,33 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 cardVisible(mPos);
             }
 
+            private int pos;
+            private RecyclerView.ViewHolder vh;
             @Override
-            public void onItemLongClick(int position, View v) {
+            public void onItemLongClick(int position, View v, RecyclerView.ViewHolder viewHolder) {
+                pos = position;
+                vh = viewHolder;
+                PopupMenu popupMenu = new PopupMenu(getContext(), v);
+                popupMenu.inflate(R.menu.options_active_task);
+                popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem menuItem) {
+                        int itemId = menuItem.getItemId();
+                        if (itemId == R.id.deleteTaskOption) {
+                            deleteTask(pos);
+                            toggleBackgroundHint();
+                            return true;
+                        } else if (itemId == R.id.markTaskDoneOption) {
+                            markAsDone(vh);
+                            toggleBackgroundHint();
+                        } else if (itemId == R.id.editTaskOption) {
+                            mPos = pos;
+                            cardVisible(mPos);
+                        }
+                        return false;
+                    }
+                });
+                popupMenu.show();
             }
         });
 
@@ -339,8 +291,6 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             public void onClick(View view) {
                 submitTask(mPos, rootview);
                 mPos = -1;
-                MainHintTV.setVisibility(View.GONE);
-
             }
         });
     }
@@ -395,11 +345,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 Toast.makeText(getContext(), "Task Added!", Toast.LENGTH_SHORT).show();
 
                 buttonVisible();
-                if (mDataset == null || mDataset.isEmpty()) {
-                    MainHintTV.setVisibility(View.VISIBLE);
-                } else {
-                    MainHintTV.setVisibility(View.GONE);
-                }
+                toggleBackgroundHint();
             }
         } else {
             String titleStr = Title.getText().toString();
@@ -451,11 +397,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 Toast.makeText(getContext(), "Task Updated!", Toast.LENGTH_SHORT).show();
 
                 buttonVisible();
-                if (mDataset == null || mDataset.isEmpty()) {
-                    MainHintTV.setVisibility(View.VISIBLE);
-                } else {
-                    MainHintTV.setVisibility(View.GONE);
-                }
+                toggleBackgroundHint();
             }
         }
     }
@@ -554,5 +496,73 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
 
     interface SendMessage {
         void sendData(DataModel item);
+    }
+
+    public void toggleBackgroundHint() {
+        if (mDataset == null || mDataset.isEmpty()) {
+            MainHintTV.setVisibility(View.VISIBLE);
+        } else {
+            MainHintTV.setVisibility(View.GONE);
+        }
+    }
+
+    public void markAsDone(RecyclerView.ViewHolder viewHolder) {
+        int position = viewHolder.getAdapterPosition();
+        DataModel item = mAdapter.deleteItem(position);
+        mAdapter.notifyItemRemoved(position);
+
+        DataModel delItem = new DataModel();
+        delItem.setTitle(item.getTitle());
+        delItem.setRepeat(item.getRepeat());
+        delItem.setTaskid(item.getTaskid());
+        delItem.setRepeatid(item.getRepeatid());
+        delItem.setRemark(item.getRemark());
+        delItem.setType(item.getType());
+        delItem.setTargetTimestamp(String.valueOf(System.currentTimeMillis()));
+        SM.sendData(delItem);
+
+        if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+            calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
+            if (item.getRepeat().compareToIgnoreCase("Daily") == 0)
+                calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1);
+            else
+                calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 6);
+            calendar.set(Calendar.HOUR_OF_DAY, calendar.get(Calendar.HOUR_OF_DAY));
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+            item.setTargetTimestamp(String.valueOf(calendar.getTimeInMillis()));
+            mInvisible.add(item);
+
+            Intent intent = new Intent(getActivity(), Notification_receiver.class);
+            intent.setAction(item.getTitle() + item.getTargetTimestamp());
+            intent.putExtra("title", item.getTitle());
+            intent.putExtra("content", item.getRemark());
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+            alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(item.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
+        } else {
+            Intent intent = new Intent(getActivity(), Notification_receiver.class);
+            intent.setAction(item.getTitle() + item.getTargetTimestamp());
+            intent.putExtra("title", item.getTitle());
+            intent.putExtra("content", item.getRemark());
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+            alarmManager.cancel(pendingIntent);
+        }
+        Toast.makeText(getContext(), "Task done!", Toast.LENGTH_SHORT).show();
+    }
+
+    public void deleteTask(int pos) {
+        DataModel item = mAdapter.deleteItem(pos);
+        mAdapter.notifyItemRemoved(pos);
+        Intent intent = new Intent(getActivity(), Notification_receiver.class);
+        intent.setAction(item.getTitle() + item.getTargetTimestamp());
+        intent.putExtra("title", item.getTitle());
+        intent.putExtra("content", item.getRemark());
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        alarmManager.cancel(pendingIntent);
+
+        Toast.makeText(getContext(), "Task Permanently Deleted!", Toast.LENGTH_SHORT).show();
     }
 }

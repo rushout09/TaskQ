@@ -409,8 +409,6 @@ public class RecyclerViewSwipeDecorator {
         try {
 
             if ( actionState != ItemTouchHelper.ACTION_STATE_SWIPE ) return;
-            if (dX < 0) return;
-
             if ( dX > 0 ) {
 
                 // Swiping Right
@@ -468,7 +466,7 @@ public class RecyclerViewSwipeDecorator {
                 }
 
 
-            }/* else if ( dX < 0 ) {
+            } else if (dX < 0) {
 
                 // Swiping Left
 
@@ -526,7 +524,7 @@ public class RecyclerViewSwipeDecorator {
 
                 }
 
-            }*/
+            }
 
         } catch(Exception e) {
 

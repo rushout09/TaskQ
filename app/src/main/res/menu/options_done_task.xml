@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/UndoLogOption"
+        android:title="Undo Task" />
+    <item
+        android:id="@+id/redoLogOption"
+        android:title="Redo Task" />
+    <item
+        android:id="@+id/deleteLogOption"
+        android:title="Delete from Log" />
+
+</menu>

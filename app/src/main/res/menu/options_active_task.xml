@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/deleteTaskOption"
+        android:title="Delete Task" />
+    <item
+        android:id="@+id/markTaskDoneOption"
+        android:title="Mark as Done" />
+    <item
+        android:id="@+id/editTaskOption"
+        android:title="Edit Task" />
+</menu>

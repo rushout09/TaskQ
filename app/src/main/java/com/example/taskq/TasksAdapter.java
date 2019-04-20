@@ -28,7 +28,8 @@ public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.MyViewHolder
     public interface ClickListener {
         void onItemClick(int position, View v);
 
-        void onItemLongClick(int position, View v);
+        void onItemLongClick(int position, View v, RecyclerView.ViewHolder viewHolder);
+
     }
 
     public void setOnItemClickListener(ClickListener clickListener) {
@@ -90,8 +91,6 @@ public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.MyViewHolder
         try {
             item = dataSet.get(position);
             dataSet.remove(position);
-            sortData();
-            notifyItemRemoved(position);
         } catch (Exception e) {
             Log.e("Adapter", e.getMessage());
         }
@@ -150,7 +149,7 @@ public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.MyViewHolder
 
         @Override
         public boolean onLongClick(View view) {
-            clickListener.onItemLongClick(getAdapterPosition(), view);
+            clickListener.onItemLongClick(getAdapterPosition(), view, this);
             return false;
         }
 
