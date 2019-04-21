@@ -16,4 +16,12 @@
         Stats
     </item>
 
+    <item
+        android:id="@+id/reset_stats"
+        android:orderInCategory="3"
+        android:title="Reset Stats"
+        app:showAsAction="ifRoom|withText">
+        Stats
+    </item>
+
 </menu>

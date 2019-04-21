@@ -325,7 +325,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
                 calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
                 calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH));
-                calendar.set(Calendar.HOUR, calendar.get(Calendar.HOUR_OF_DAY) + 1);
+                calendar.set(Calendar.HOUR, 6);
                 calendar.set(Calendar.MINUTE, 0);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
@@ -334,7 +334,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
                 calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
                 calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 6);
-                calendar.set(Calendar.HOUR, calendar.get(Calendar.HOUR_OF_DAY));
+                calendar.set(Calendar.HOUR, 6);
                 calendar.set(Calendar.MINUTE, 0);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
@@ -517,6 +517,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             item.setCurrentStreak(currentStreak);
             item.insertMaxStreak(maxStreak);
         }
+
 
         DataModel delItem = new DataModel();
         delItem.setTitle(item.getTitle());

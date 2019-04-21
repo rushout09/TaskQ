@@ -140,8 +140,8 @@ public class LoggedTask extends Fragment {
                             return true;
                         } else if (itemId == R.id.undoLogOption) {
                             DataModel item = LoggedTaskList.get(position);
-                            if (Long.parseLong(item.getDoneTimestamp()) < (System.currentTimeMillis() - 1000 * 60 * 15)) {
-                                Toast.makeText(getContext(), "You cannot undo any task after 15 minutes of its completion.", Toast.LENGTH_SHORT).show();
+                            if (item.getRepeat().compareToIgnoreCase("Daily") == 0 || item.getRepeat().compareToIgnoreCase("Weekly") == 0) {
+                                Toast.makeText(getContext(), "You cannot undo Repetitive tasks.", Toast.LENGTH_SHORT).show();
                                 return true;
                             }
                             int currentStreak = item.getCurrentStreak();
@@ -154,6 +154,10 @@ public class LoggedTask extends Fragment {
                             return true;
                         } else if (itemId == R.id.redoLogOption) {
                             DataModel item = LoggedTaskList.get(position);
+                            if (item.getRepeat().compareToIgnoreCase("Daily") == 0 || item.getRepeat().compareToIgnoreCase("Weekly") == 0) {
+                                Toast.makeText(getContext(), "You cannot redo Repetitive tasks.", Toast.LENGTH_SHORT).show();
+                                return true;
+                            }
                             SM.sendDataToActive(item, false);
                             Toast.makeText(getContext(), "Task Added to Todo", Toast.LENGTH_SHORT).show();
                             return true;
@@ -168,7 +172,7 @@ public class LoggedTask extends Fragment {
                             } else {
                                 Toast.makeText(getContext(), "Streak is only available for daily tasks.", Toast.LENGTH_SHORT).show();
                             }
-
+                            return true;
                         }
                         return false;
                     }

@@ -45,10 +45,10 @@ public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.MyViewHolder
             holder.remarkView.setVisibility(View.VISIBLE);
             holder.remarkView.setText(dataSet.get(position).getRemark());
         }
-        SimpleDateFormat formatter = new SimpleDateFormat("hh:mm a, E (dd/MM)", Locale.getDefault());
+        SimpleDateFormat formatter = new SimpleDateFormat("hh:mm a \nE (dd/MM)", Locale.getDefault());
         String datestr = formatter.format(new Date(Long.parseLong(dataSet.get(position).getTargetTimestamp())));
         holder.datetimeView.setText("Complete By " + datestr);
-        holder.repeatTV.setText("Repeat: " + dataSet.get(position).getRepeat() + " Type: " + dataSet.get(position).getType());
+        holder.repeatTV.setText("Repeat: " + dataSet.get(position).getRepeat() + "\nType: " + dataSet.get(position).getType());
     }
 
     @NonNull

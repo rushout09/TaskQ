@@ -42,10 +42,10 @@ public class LogsAdapter extends RecyclerView.Adapter<LogsAdapter.MyViewHolder> 
             holder.remarkView.setVisibility(View.VISIBLE);
             holder.remarkView.setText(dataSet.get(position).getRemark());
         }
-        SimpleDateFormat formatter = new SimpleDateFormat("hh:mm a, E (dd/MM)", Locale.getDefault());
+        SimpleDateFormat formatter = new SimpleDateFormat("hh:mm a \nE (dd/MM)", Locale.getDefault());
         String datestr = formatter.format(new Date(Long.parseLong(dataSet.get(position).getDoneTimestamp())));
         holder.datetimeView.setText("Completed On " + datestr);
-        holder.repeatTv.setText("Repeat: " + dataSet.get(position).getRepeat() + " Type: " + dataSet.get(position).getType());
+        holder.repeatTv.setText("Repeat: " + dataSet.get(position).getRepeat() + "\nType: " + dataSet.get(position).getType());
     }
 
     @Override

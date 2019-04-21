@@ -109,6 +109,10 @@ public class MainActivity extends AppCompatActivity implements ActiveTask.SendMe
             intent.putExtra("chores", stats.get(CHORES));
             intent.putExtra("recreation", stats.get(RECREATION));
             startActivity(intent);
+        } else if (itemId == R.id.reset_stats) {
+            stats.set(PRODUCTIVE, 0);
+            stats.set(CHORES, 0);
+            stats.set(RECREATION, 0);
         }
         return true;
     }

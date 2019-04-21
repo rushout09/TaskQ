@@ -32,7 +32,6 @@ public class PieActivity extends AppCompatActivity {
 
         AnyChartView anyChartView = findViewById(R.id.graph);
         anyChartView.setProgressBar(findViewById(R.id.top_progress_bar));
-
         Pie pie = AnyChart.pie();
 
         pie.setOnClickListener(new ListenersInterface.OnClickListener(new String[]{"x", "value"}) {
