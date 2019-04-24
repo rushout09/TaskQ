@@ -178,6 +178,13 @@ public class MainActivity extends AppCompatActivity implements ActiveTask.SendMe
     }
 
     @Override
+    public void popFromLog() {
+        String tag = "android:switcher:" + R.id.view_pager + ":" + 1;
+        LoggedTask loggedTask = (LoggedTask) getSupportFragmentManager().findFragmentByTag(tag);
+        loggedTask.popLoggedTask();
+    }
+
+    @Override
     public void sendDataToActive(DataModel item, Boolean isUndo) {
         String tag = "android:switcher:" + R.id.view_pager + ":" + 0;
         ActiveTask activeTask = (ActiveTask) getSupportFragmentManager().findFragmentByTag(tag);
@@ -192,6 +199,6 @@ public class MainActivity extends AppCompatActivity implements ActiveTask.SendMe
             }
         }
         if (activeTask != null)
-            activeTask.addTaskList(item);
+            activeTask.addTask(item);
     }
 }

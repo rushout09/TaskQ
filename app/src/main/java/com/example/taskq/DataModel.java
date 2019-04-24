@@ -1,71 +1,87 @@
 package com.example.taskq;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 public class DataModel {
-    private String mTitle;
-    private String mRemark;
+    private String Title;
+    private String Remark;
 
-    private String mType;
-    private String mRepeat;
-    private String mTypeId;
-    private String mRepeatId;
-    private String mTargetTimestamp;
-    private String mDoneTimestamp;
+    private String Type;
+    private String Repeat;
+    private String TypeId;
+    private String RepeatId;
+    private String TargetTimestamp;
+    private String DoneTimestamp;
     private ArrayList<Integer> maxStreak;
     private int streakCount;
     private int currentStreak;
+    private UUID Uuid;
 
     public DataModel(){}
 
+    public DataModel(DataModel dataModel) {
+        this.Title = dataModel.Title;
+        this.Remark = dataModel.Remark;
+        this.Type = dataModel.Type;
+        this.Repeat = dataModel.Repeat;
+        this.TypeId = dataModel.TypeId;
+        this.RepeatId = dataModel.RepeatId;
+        this.TargetTimestamp = dataModel.TargetTimestamp;
+        this.DoneTimestamp = dataModel.DoneTimestamp;
+        this.maxStreak = dataModel.maxStreak;
+        this.streakCount = dataModel.streakCount;
+        this.currentStreak = dataModel.currentStreak;
+        this.Uuid = dataModel.Uuid;
+    }
+
     public DataModel(String Title, String Remark, String Type, String Repeat,
                      String Taskid, String Repeatid, String TargetTimestamp) {
-        mTitle = Title;
-        mRemark = Remark;
-        mType = Type;
-        mRepeat = Repeat;
-        mRepeatId = Repeatid;
-        mTypeId = Taskid;
-        mTargetTimestamp = TargetTimestamp;
-        streakCount = 1;
-        maxStreak = new ArrayList<Integer>();
-        maxStreak.add(0);
-        currentStreak = 0;
-        mDoneTimestamp = "0";
+        this.Title = Title;
+        this.Remark = Remark;
+        this.Type = Type;
+        this.Repeat = Repeat;
+        this.RepeatId = Repeatid;
+        this.TypeId = Taskid;
+        this.TargetTimestamp = TargetTimestamp;
+        this.streakCount = 1;
+        this.maxStreak = new ArrayList<Integer>();
+        this.maxStreak.add(0);
+        this.currentStreak = 0;
+        this.DoneTimestamp = "0";
 
     }
 
     public String getTitle() {
-        return mTitle;
+        return Title;
+    }
+
+    public void setTitle(String mTitle) {
+        this.Title = mTitle;
     }
 
     public String getRemark() {
-        return mRemark;
+        return Remark;
+    }
+
+    public void setRemark(String mRemark) {
+        this.Remark = mRemark;
     }
 
     public String getType() {
-        return mType;
+        return Type;
     }
 
+    public void setType(String mType) {
+        this.Type = mType;
+    }
 
     public String getRepeat() {
-        return mRepeat;
+        return Repeat;
     }
 
-    public String getRepeatId() {
-        return mRepeatId;
-    }
-
-    public void setRepeatId(String mRepeatid) {
-        this.mRepeatId = mRepeatid;
-    }
-
-    public String getTargetTimestamp() {
-        return mTargetTimestamp;
-    }
-
-    public String getTaskId() {
-        return mTypeId;
+    public void setRepeat(String mRepeat) {
+        this.Repeat = mRepeat;
     }
 
     public int getMaxStreakValue() {
@@ -97,35 +113,43 @@ public class DataModel {
         }
     }
 
+    public String getRepeatId() {
+        return RepeatId;
+    }
+
+    public void setRepeatId(String mRepeatid) {
+        this.RepeatId = mRepeatid;
+    }
+
+    public String getTargetTimestamp() {
+        return TargetTimestamp;
+    }
+
     public void setTargetTimestamp(String mTargetTimestamp) {
-        this.mTargetTimestamp = mTargetTimestamp;
+        this.TargetTimestamp = mTargetTimestamp;
     }
 
-    public void setType(String mType) {
-        this.mType = mType;
-    }
-
-    public void setTitle(String mTitle) {
-        this.mTitle = mTitle;
-    }
-
-    public void setRemark(String mRemark) {
-        this.mRemark = mRemark;
-    }
-
-    public void setRepeat(String mRepeat) {
-        this.mRepeat = mRepeat;
+    public String getTaskId() {
+        return TypeId;
     }
 
     public String getDoneTimestamp() {
-        return mDoneTimestamp;
+        return DoneTimestamp;
     }
 
     public void setDoneTimestamp(String mDoneTimestamp) {
-        this.mDoneTimestamp = mDoneTimestamp;
+        this.DoneTimestamp = mDoneTimestamp;
     }
 
     public void setTypeId(String mTaskid) {
-        this.mTypeId = mTaskid;
+        this.TypeId = mTaskid;
+    }
+
+    public UUID getUuid() {
+        return Uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.Uuid = uuid;
     }
 }

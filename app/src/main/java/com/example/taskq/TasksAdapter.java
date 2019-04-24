@@ -59,15 +59,6 @@ public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.MyViewHolder
         return vh;
     }
 
-    public void addItem(DataModel item, int position) {
-        try {
-            dataSet.add(position, item);
-            notifyDataSetChanged();
-        } catch (Exception e) {
-            Log.e("MainActivity", e.getMessage());
-        }
-    }
-
     public void addItem(DataModel item) {
         try {
             dataSet.add(item);
@@ -87,16 +78,14 @@ public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.MyViewHolder
     }
 
 
-    public DataModel deleteItem(int position) {
-        DataModel item = null;
+    public void deleteItem(int position) {
         try {
-            item = dataSet.get(position);
             dataSet.remove(position);
+            notifyItemRemoved(position);
         } catch (Exception e) {
             Log.e("Adapter", e.getMessage());
         }
 
-        return item;
     }
 
     protected void sortData() {
@@ -153,7 +142,7 @@ public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.MyViewHolder
         @Override
         public boolean onLongClick(View view) {
             clickListener.onItemLongClick(getAdapterPosition(), view, this);
-            return false;
+            return true;
         }
 
     }

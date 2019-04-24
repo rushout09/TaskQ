@@ -1,8 +1,6 @@
 package com.example.taskq;
 
-import android.app.AlarmManager;
 import android.app.DatePickerDialog;
-import android.app.PendingIntent;
 import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -13,6 +11,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.CardView;
@@ -37,6 +36,10 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.gson.Gson;
@@ -47,8 +50,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
-
-import static android.content.Context.ALARM_SERVICE;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -75,9 +78,9 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
     private EditText DateET;
     private EditText TimeET;
     private Calendar calendar;
-    private AlarmManager alarmManager;
     private FirebaseUser user;
     private TasksAdapter mAdapter;
+    private OneTimeWorkRequest notificationRequest;
 
     @Nullable
     @Override
@@ -102,7 +105,6 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         AddTask = rootview.findViewById(R.id.add_task);
         MainHintTV = rootview.findViewById(R.id.tv_main);
         user = FirebaseAuth.getInstance().getCurrentUser();
-        alarmManager = (AlarmManager) getActivity().getSystemService(ALARM_SERVICE);
 
         Gson gson = new Gson();
         shref = getActivity().getSharedPreferences("tasks", Context.MODE_PRIVATE);
@@ -146,15 +148,31 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         recyclerView.setAdapter(mAdapter);
         ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
 
+            DataModel item, item2;
+
             @Override
             public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
                 return false;
             }
 
             @Override
-            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+            public void onSwiped(final RecyclerView.ViewHolder viewHolder, int direction) {
+                item = mDataset.get(viewHolder.getAdapterPosition());
+                item2 = new DataModel(item);
                 markAsDone(viewHolder);
-                toggleBackgroundHint();
+                Snackbar snackbar = Snackbar.make(recyclerView, "Task Done!", Snackbar.LENGTH_SHORT);
+                snackbar.setAction("UNDO", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        addTask(item2);
+                        if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
+                            cancelNotificationRequest(item.getUuid());
+                            mInvisible.remove(item);
+                        }
+                        SM.popFromLog();
+                    }
+                });
+                snackbar.show();
             }
 
             // You must use @RecyclerViewSwipeDecorator inside the onChildDraw method
@@ -180,9 +198,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(callback);
         itemTouchHelper.attachToRecyclerView(recyclerView);
 
-
         mPos = -1;
-
 
         final DatePickerDialog.OnDateSetListener date = new DatePickerDialog.OnDateSetListener() {
             @Override
@@ -216,7 +232,6 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 calendar.set(Calendar.MINUTE, i1);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
-
                 updateTime();
             }
 
@@ -265,14 +280,16 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                         int itemId = menuItem.getItemId();
                         if (itemId == R.id.deleteTaskOption) {
                             deleteTask(pos);
-                            toggleBackgroundHint();
+                            Toast.makeText(getContext(), "Task Permanently Deleted!", Toast.LENGTH_SHORT).show();
                             return true;
                         } else if (itemId == R.id.markTaskDoneOption) {
                             markAsDone(vh);
-                            toggleBackgroundHint();
+                            Toast.makeText(getContext(), "Task done!", Toast.LENGTH_SHORT).show();
+                            return true;
                         } else if (itemId == R.id.editTaskOption) {
                             mPos = pos;
                             cardVisible(mPos);
+                            return true;
                         } else if (itemId == R.id.viewGraphOption) {
                             if (mDataset.get(pos).getRepeat().compareTo("Daily") == 0) {
                                 DataModel item = mDataset.get(pos);
@@ -284,7 +301,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                             } else {
                                 Toast.makeText(getContext(), "Streak is only available for daily tasks.", Toast.LENGTH_SHORT).show();
                             }
-
+                            return true;
                         }
                         return false;
                     }
@@ -309,27 +326,27 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
     }
 
     protected void submitTask(int position, View rootview) {
+        String titleStr = Title.getText().toString();
+        String remarkStr = Remark.getText().toString();
+        String TypeInt = String.valueOf(Type.getCheckedRadioButtonId());
+        String repeatInt = String.valueOf(Repeat_RG.getCheckedRadioButtonId());
+        RadioButton rb = rootview.findViewById(Type.getCheckedRadioButtonId());
+        String TypeStr = rb.getText().toString();
+        rb = rootview.findViewById(Repeat_RG.getCheckedRadioButtonId());
+        String repeatStr = rb.getText().toString();
+        String dateStr = DateET.getText().toString();
         if (position == -1) {
-            String titleStr = Title.getText().toString();
-            String remarkStr = Remark.getText().toString();
-            String TypeInt = String.valueOf(Type.getCheckedRadioButtonId());
-            String RepeatInt = String.valueOf(Repeat_RG.getCheckedRadioButtonId());
-            RadioButton rb = rootview.findViewById(Type.getCheckedRadioButtonId());
-            String TypeStr = rb.getText().toString();
-            rb = rootview.findViewById(Repeat_RG.getCheckedRadioButtonId());
-            String RepeatStr = rb.getText().toString();
-            String dateStr = DateET.getText().toString();
             String timestampStr = "0";
-            if (RepeatStr.compareToIgnoreCase("Daily") == 0) {
+            if (repeatStr.compareToIgnoreCase("Daily") == 0) {
                 calendar = Calendar.getInstance();
                 calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
                 calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
-                calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH));
+                calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1);
                 calendar.set(Calendar.HOUR, 6);
                 calendar.set(Calendar.MINUTE, 0);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
-            } else if (RepeatStr.compareToIgnoreCase("Weekly") == 0) {
+            } else if (repeatStr.compareToIgnoreCase("Weekly") == 0) {
                 calendar = Calendar.getInstance();
                 calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
                 calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
@@ -341,44 +358,23 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             }
             if (titleStr.isEmpty()) {
                 Toast.makeText(getContext(), "Empty Title!", Toast.LENGTH_SHORT).show();
-            } else if (RepeatStr.compareToIgnoreCase("Once") == 0 && (dateStr.compareToIgnoreCase("Date") == 0)) {
+            } else if ((repeatStr.compareToIgnoreCase("Once") == 0) && (dateStr.compareToIgnoreCase("Date") == 0)) {
                 Toast.makeText(getContext(), "Give proper Date!", Toast.LENGTH_SHORT).show();
             } else {
                 timestampStr = String.valueOf(calendar.getTimeInMillis());
-                DataModel newTask = new DataModel(titleStr, remarkStr, TypeStr, RepeatStr, TypeInt, RepeatInt, timestampStr);
-                addTaskList(newTask);
-
+                DataModel newTask = new DataModel(titleStr, remarkStr, TypeStr, repeatStr, TypeInt, repeatInt, timestampStr);
+                addTask(newTask);
+                Toast.makeText(getContext(), "Task Added!", Toast.LENGTH_SHORT).show();
                 buttonVisible();
-                toggleBackgroundHint();
             }
         } else {
-            String titleStr = Title.getText().toString();
             DataModel currentTask = mDataset.get(position);
-            String remarkStr = Remark.getText().toString();
-            String TypeInt = String.valueOf(Type.getCheckedRadioButtonId());
-            String repeatInt = String.valueOf(Repeat_RG.getCheckedRadioButtonId());
-            RadioButton rb = rootview.findViewById(Type.getCheckedRadioButtonId());
-            String TypeStr = rb.getText().toString();
-            rb = rootview.findViewById(Repeat_RG.getCheckedRadioButtonId());
-            String repeatStr = rb.getText().toString();
-            String dateStr = DateET.getText().toString();
             if (titleStr.isEmpty()) {
                 Toast.makeText(getContext(), "Empty Title!", Toast.LENGTH_SHORT).show();
             } else if (repeatStr.compareToIgnoreCase("Once") == 0 && (dateStr.compareToIgnoreCase("Date") == 0)) {
                 Toast.makeText(getContext(), "Give proper Date!", Toast.LENGTH_SHORT).show();
             } else {
                 String timestampStr = String.valueOf(calendar.getTimeInMillis());
-                Intent intent = new Intent(getContext(), Notification_receiver.class);
-                intent.setAction(currentTask.getTitle() + currentTask.getTargetTimestamp());
-                intent.putExtra("title", currentTask.getTitle());
-                intent.putExtra("content", currentTask.getRemark());
-                PendingIntent pendingIntent = PendingIntent.getBroadcast(getContext(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                alarmManager.cancel(pendingIntent);
-
-                int f = 0;
-                if (currentTask.getTargetTimestamp().compareToIgnoreCase(timestampStr) != 0) {
-                    f = 1;
-                }
                 currentTask.setTargetTimestamp(timestampStr);
                 currentTask.setType(TypeStr);
                 currentTask.setRemark(remarkStr);
@@ -386,22 +382,10 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 currentTask.setTypeId(TypeInt);
                 currentTask.setRepeat(repeatStr);
                 currentTask.setTitle(titleStr);
-
-                intent = new Intent(getContext(), Notification_receiver.class);
-                intent.setAction(currentTask.getTitle() + currentTask.getTargetTimestamp());
-                intent.putExtra("title", titleStr);
-                intent.putExtra("content", remarkStr);
-                pendingIntent = PendingIntent.getBroadcast(getContext(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(currentTask.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
-
-                if (f == 1) {
-                    mAdapter.sortData();
-                }
-                mAdapter.notifyDataSetChanged();
+                deleteTask(position);
+                addTask(currentTask);
                 Toast.makeText(getContext(), "Task Updated!", Toast.LENGTH_SHORT).show();
-
                 buttonVisible();
-                toggleBackgroundHint();
             }
         }
     }
@@ -448,26 +432,6 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         AddTask.show();
     }
 
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        Gson gson = new Gson();
-        shref = getActivity().getSharedPreferences("tasks", Context.MODE_PRIVATE);
-        String json = gson.toJson(mDataset);
-        SharedPreferences.Editor editor = shref.edit();
-        editor.remove(user.getUid()).apply();
-        editor.putString(user.getUid(), json);
-        editor.commit();
-        shref = getActivity().getSharedPreferences("invisible", Context.MODE_PRIVATE);
-        json = gson.toJson(mInvisible);
-        editor = shref.edit();
-        editor.remove(user.getUid()).apply();
-        editor.putString(user.getUid(), json);
-        editor.commit();
-    }
-
-
     protected void updateDate() {
         String myFormat = "dd/MM/yy (EEEE)";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
@@ -478,6 +442,91 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         String myFormat = "hh:mm a";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
         TimeET.setText(sdf.format(calendar.getTime()));
+    }
+
+    public void markAsDone(RecyclerView.ViewHolder viewHolder) {
+        int position = viewHolder.getAdapterPosition();
+        DataModel item = mDataset.get(position);
+
+        if (item.getDoneTimestamp().compareTo("0") == 0 || (System.currentTimeMillis() - Long.parseLong(item.getDoneTimestamp()) <= 1000 * 60 * 60 * 24)) {
+            int currentStreak = item.getCurrentStreak();
+            currentStreak++;
+            item.setCurrentStreak(currentStreak);
+        } else {
+            int maxStreak = item.getMaxStreakValue();
+            int currentStreak = item.getCurrentStreak();
+            if (maxStreak < currentStreak) {
+                maxStreak = currentStreak;
+            }
+            currentStreak = 1;
+            item.setCurrentStreak(currentStreak);
+            item.insertMaxStreak(maxStreak);
+        }
+
+        DataModel delItem = new DataModel(item.getTitle(), item.getRemark(), item.getType(), item.getRepeat(), item.getTaskId(), item.getRepeatId(), item.getTargetTimestamp());
+        delItem.setDoneTimestamp(String.valueOf(System.currentTimeMillis()));
+        SM.sendDataToLog(delItem);
+
+        deleteTask(position);
+
+        if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+            calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
+            if (item.getRepeat().compareToIgnoreCase("Daily") == 0)
+                calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1);
+            else
+                calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 6);
+            calendar.set(Calendar.HOUR_OF_DAY, calendar.get(Calendar.HOUR_OF_DAY));
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+            item.setTargetTimestamp(String.valueOf(calendar.getTimeInMillis()));
+            UUID id = setNotificationRequest(item.getTitle(), item.getRemark(), item.getTargetTimestamp());
+            item.setUuid(id);
+            mInvisible.add(item);
+        }
+    }
+
+    public void toggleBackgroundHint() {
+        if (mDataset == null || mDataset.isEmpty()) {
+            MainHintTV.setVisibility(View.VISIBLE);
+        } else {
+            MainHintTV.setVisibility(View.GONE);
+        }
+    }
+
+    public void addTask(DataModel task) {
+        UUID id = setNotificationRequest(task.getTitle(), task.getRemark(), task.getTargetTimestamp());
+        task.setUuid(id);
+        mAdapter.addItem(task);
+        toggleBackgroundHint();
+    }
+
+    public void deleteTask(int pos) {
+        cancelNotificationRequest(mDataset.get(pos).getUuid());
+        mAdapter.deleteItem(pos);
+        toggleBackgroundHint();
+    }
+
+    private UUID setNotificationRequest(String Title, String Content, String Target) {
+        SimpleDateFormat format = new SimpleDateFormat("hh:mm a", Locale.getDefault());
+        String time = format.format(new Date(Long.parseLong(Target)));
+        Data data = new Data.Builder()
+                .putString("title", Title + " By " + time)
+                .putString("content", Content)
+                .build();
+        long delay = Long.parseLong(Target) - System.currentTimeMillis() - 1000 * 60 * 45;
+        notificationRequest = new OneTimeWorkRequest.Builder(NotificationWorker.class)
+                .setInputData(data)
+                .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+                .build();
+        WorkManager.getInstance().enqueue(notificationRequest);
+        return notificationRequest.getId();
+    }
+
+    private void cancelNotificationRequest(UUID noificationId) {
+        WorkManager.getInstance().cancelWorkById(noificationId);
     }
 
     @Override
@@ -498,108 +547,28 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         }
     }
 
-    public void markAsDone(RecyclerView.ViewHolder viewHolder) {
-        int position = viewHolder.getAdapterPosition();
-        DataModel item = mAdapter.deleteItem(position);
-        mAdapter.notifyItemRemoved(position);
-
-        if (item.getDoneTimestamp().compareTo("0") == 0 || (System.currentTimeMillis() - Long.parseLong(item.getDoneTimestamp()) <= 1000 * 60 * 60 * 24)) {
-            int currentStreak = item.getCurrentStreak();
-            currentStreak++;
-            item.setCurrentStreak(currentStreak);
-        } else {
-            int maxStreak = item.getMaxStreakValue();
-            int currentStreak = item.getCurrentStreak();
-            if (maxStreak < currentStreak) {
-                maxStreak = currentStreak;
-            }
-            currentStreak = 1;
-            item.setCurrentStreak(currentStreak);
-            item.insertMaxStreak(maxStreak);
-        }
-
-
-        DataModel delItem = new DataModel();
-        delItem.setTitle(item.getTitle());
-        delItem.setRepeat(item.getRepeat());
-        delItem.setTypeId(item.getTaskId());
-        delItem.setRepeatId(item.getRepeatId());
-        delItem.setRemark(item.getRemark());
-        delItem.setType(item.getType());
-        delItem.setMaxStreak(item.getMaxStreak());
-        delItem.setCurrentStreak(item.getCurrentStreak());
-        delItem.setTargetTimestamp(item.getTargetTimestamp());
-        delItem.setDoneTimestamp(String.valueOf(System.currentTimeMillis()));
-        SM.sendDataToLog(delItem);
-
-        if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
-            Calendar calendar = Calendar.getInstance();
-            calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
-            calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
-            if (item.getRepeat().compareToIgnoreCase("Daily") == 0)
-                calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1);
-            else
-                calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 6);
-            calendar.set(Calendar.HOUR_OF_DAY, calendar.get(Calendar.HOUR_OF_DAY));
-            calendar.set(Calendar.MINUTE, 0);
-            calendar.set(Calendar.SECOND, 0);
-            calendar.set(Calendar.MILLISECOND, 0);
-            item.setTargetTimestamp(String.valueOf(calendar.getTimeInMillis()));
-            mInvisible.add(item);
-
-            Intent intent = new Intent(getActivity(), Notification_receiver.class);
-            intent.setAction(item.getTitle() + item.getTargetTimestamp());
-            intent.putExtra("title", item.getTitle());
-            intent.putExtra("content", item.getRemark());
-            PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-            alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(item.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
-        } else {
-            Intent intent = new Intent(getActivity(), Notification_receiver.class);
-            intent.setAction(item.getTitle() + item.getTargetTimestamp());
-            intent.putExtra("title", item.getTitle());
-            intent.putExtra("content", item.getRemark());
-            PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-            alarmManager.cancel(pendingIntent);
-        }
-        Toast.makeText(getContext(), "Task done!", Toast.LENGTH_SHORT).show();
-    }
-
-    public void toggleBackgroundHint() {
-        if (mDataset == null || mDataset.isEmpty()) {
-            MainHintTV.setVisibility(View.VISIBLE);
-        } else {
-            MainHintTV.setVisibility(View.GONE);
-        }
-    }
-
-    public void addTaskList(DataModel newTask) {
-        Intent intent = new Intent(getActivity(), Notification_receiver.class);
-        intent.setAction(newTask.getTitle() + newTask.getTargetTimestamp());
-        intent.putExtra("title", newTask.getTitle());
-        intent.putExtra("content", newTask.getRemark());
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-        alarmManager.set(AlarmManager.RTC_WAKEUP, Long.parseLong(newTask.getTargetTimestamp()) - 1000 * 60 * 45, pendingIntent);
-        mAdapter.addItem(newTask);
-        mAdapter.sortData();
-        mAdapter.notifyDataSetChanged();
-        Toast.makeText(getContext(), "Task Added!", Toast.LENGTH_SHORT).show();
-        toggleBackgroundHint();
-    }
-
-    public void deleteTask(int pos) {
-        DataModel item = mAdapter.deleteItem(pos);
-        mAdapter.notifyItemRemoved(pos);
-        Intent intent = new Intent(getActivity(), Notification_receiver.class);
-        intent.setAction(item.getTitle() + item.getTargetTimestamp());
-        intent.putExtra("title", item.getTitle());
-        intent.putExtra("content", item.getRemark());
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 100, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-        alarmManager.cancel(pendingIntent);
-
-        Toast.makeText(getContext(), "Task Permanently Deleted!", Toast.LENGTH_SHORT).show();
+    @Override
+    public void onPause() {
+        super.onPause();
+        Gson gson = new Gson();
+        shref = getActivity().getSharedPreferences("tasks", Context.MODE_PRIVATE);
+        String json = gson.toJson(mDataset);
+        SharedPreferences.Editor editor = shref.edit();
+        editor.remove(user.getUid()).apply();
+        editor.putString(user.getUid(), json);
+        editor.commit();
+        shref = getActivity().getSharedPreferences("invisible", Context.MODE_PRIVATE);
+        json = gson.toJson(mInvisible);
+        editor = shref.edit();
+        editor.remove(user.getUid()).apply();
+        editor.putString(user.getUid(), json);
+        editor.commit();
     }
 
     interface SendMessageToLog {
         void sendDataToLog(DataModel item);
+
+        void popFromLog();
     }
+
 }
