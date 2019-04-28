@@ -181,6 +181,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                         if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
                             cancelNotificationRequest(item.getUuid());
                             mInvisible.remove(item);
+                            snoozedAdapter.notifyItemRemoved(mInvisible.size());
                         }
                         SM.popFromLog(item.getType());
                     }
@@ -254,7 +255,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         TimeET.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                TimePickerDialog tpd = new TimePickerDialog(getContext(), time, calendar.get(Calendar.HOUR_OF_DAY) + 1, 0, false);
+                TimePickerDialog tpd = new TimePickerDialog(getContext(), time, calendar.get(Calendar.HOUR_OF_DAY), 0, false);
                 tpd.show();
             }
         });
@@ -264,8 +265,10 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             public void onCheckedChanged(RadioGroup radioGroup, int i) {
                 if (i == R.id.once_RB) {
                     DatetimeLL.setVisibility(View.VISIBLE);
+                    DateET.setVisibility(View.VISIBLE);
                 } else if (i == R.id.daily_RB) {
-                    DatetimeLL.setVisibility(View.GONE);
+                    DatetimeLL.setVisibility(View.VISIBLE);
+                    DateET.setVisibility(View.GONE);
                 } else if (i == R.id.weekly_RB) {
                     DatetimeLL.setVisibility(View.GONE);
                 }
@@ -374,6 +377,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                                     if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
                                         cancelNotificationRequest(item.getUuid());
                                         mInvisible.remove(item);
+                                        snoozedAdapter.notifyItemRemoved(mInvisible.size());
                                     }
                                     SM.popFromLog(item.getType());
                                 }
@@ -436,8 +440,8 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 calendar = Calendar.getInstance();
                 calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
                 calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
-                calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1);
-                calendar.set(Calendar.HOUR, 6);
+                calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH));
+                calendar.set(Calendar.HOUR_OF_DAY, calendar.get(Calendar.HOUR_OF_DAY));
                 calendar.set(Calendar.MINUTE, 0);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
@@ -445,8 +449,8 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 calendar = Calendar.getInstance();
                 calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
                 calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
-                calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 6);
-                calendar.set(Calendar.HOUR, 6);
+                calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH));
+                calendar.set(Calendar.HOUR_OF_DAY, 6);
                 calendar.set(Calendar.MINUTE, 0);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
@@ -542,8 +546,9 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
     public void markAsDone(RecyclerView.ViewHolder viewHolder) {
         int position = viewHolder.getAdapterPosition();
         DataModel item = mDataset.get(position);
+        long currentTime = System.currentTimeMillis();
 
-        if (item.getDoneTimestamp().compareTo("0") == 0 || (System.currentTimeMillis() - Long.parseLong(item.getDoneTimestamp()) <= 1000 * 60 * 60 * 24)) {
+        if (item.getDoneTimestamp().compareTo("0") == 0 || (currentTime - Long.parseLong(item.getDoneTimestamp()) <= 1000 * 60 * 60 * 24)) {
             int currentStreak = item.getCurrentStreak();
             currentStreak++;
             item.setCurrentStreak(currentStreak);
@@ -559,7 +564,8 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         }
 
         DataModel delItem = new DataModel(item.getTitle(), item.getRemark(), item.getType(), item.getRepeat(), item.getTaskId(), item.getRepeatId(), item.getTargetTimestamp());
-        delItem.setDoneTimestamp(String.valueOf(System.currentTimeMillis()));
+        delItem.setDoneTimestamp(String.valueOf(currentTime));
+        item.setDoneTimestamp(String.valueOf(currentTime));
         SM.sendDataToLog(delItem);
 
         deleteTask(position);
