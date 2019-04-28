@@ -65,6 +65,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
     SharedPreferences shref;
     InputMethodManager imm;
     private RecyclerView recyclerView;
+    private RecyclerView recyclerView2;
     private SendMessageToLog SM;
     private RecyclerView.LayoutManager layoutManager;
     private ArrayList<DataModel> mDataset;
@@ -81,6 +82,9 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
     private FirebaseUser user;
     private TasksAdapter mAdapter;
     private OneTimeWorkRequest notificationRequest;
+    private SnoozedAdapter snoozedAdapter;
+    private RecyclerView.LayoutManager layoutManager2;
+    private TextView snoozedTv;
 
     @Nullable
     @Override
@@ -93,6 +97,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
     public void onViewCreated(@NonNull final View rootview, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(rootview, savedInstanceState);
         recyclerView = rootview.findViewById(R.id.recycler_view);
+        recyclerView2 = rootview.findViewById(R.id.snoozedList);
         cardView = rootview.findViewById(R.id.cardview_main);
         SubmitButton = rootview.findViewById(R.id.task_submit);
         Title = rootview.findViewById(R.id.title_submit);
@@ -105,6 +110,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         AddTask = rootview.findViewById(R.id.add_task);
         MainHintTV = rootview.findViewById(R.id.tv_main);
         user = FirebaseAuth.getInstance().getCurrentUser();
+        snoozedTv = rootview.findViewById(R.id.snoozedTv);
 
         Gson gson = new Gson();
         shref = getActivity().getSharedPreferences("tasks", Context.MODE_PRIVATE);
@@ -137,14 +143,16 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         }
         if (mDataset == null || mDataset.isEmpty()) {
             mDataset = new ArrayList<DataModel>();
-            MainHintTV.setVisibility(View.VISIBLE);
-        } else {
-            MainHintTV.setVisibility(View.GONE);
         }
+        toggleBackgroundHint();
 
         layoutManager = new LinearLayoutManager(getActivity());
+        layoutManager2 = new LinearLayoutManager(getActivity());
+        recyclerView2.setLayoutManager(layoutManager2);
         recyclerView.setLayoutManager(layoutManager);
         mAdapter = new TasksAdapter(mDataset);
+        snoozedAdapter = new SnoozedAdapter(mInvisible);
+        recyclerView2.setAdapter(snoozedAdapter);
         recyclerView.setAdapter(mAdapter);
         ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
 
@@ -173,6 +181,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                     }
                 });
                 snackbar.show();
+                toggleBackgroundHint();
             }
 
             // You must use @RecyclerViewSwipeDecorator inside the onChildDraw method
@@ -258,6 +267,46 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             }
         });
 
+        snoozedAdapter.setOnItemClickListener(new SnoozedAdapter.ClickListener() {
+            @Override
+            public void onItemClick(int position, View v) {
+
+            }
+
+            @Override
+            public void onItemLongClick(final int position, View v, RecyclerView.ViewHolder viewHolder) {
+                PopupMenu popupMenu = new PopupMenu(getContext(), v);
+                popupMenu.inflate(R.menu.options_snoozed_task);
+                popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem menuItem) {
+                        int itemId = menuItem.getItemId();
+                        if (itemId == R.id.viewSnoozedGraphOption) {
+                            if (mInvisible.get(position).getRepeat().compareTo("Daily") == 0) {
+                                DataModel item = mInvisible.get(position);
+                                Intent intent = new Intent(getContext(), GraphActivity.class);
+                                intent.putExtra("currentStreak", item.getCurrentStreak());
+                                intent.putExtra("maxStreak", item.getMaxStreak());
+                                intent.putExtra("title", item.getTitle());
+                                startActivity(intent);
+                            } else {
+                                Toast.makeText(getContext(), "Streak is only available for daily tasks.", Toast.LENGTH_SHORT).show();
+                            }
+                            return true;
+                        } else if (itemId == R.id.deleteSnoozedTaskOption) {
+                            cancelNotificationRequest(mInvisible.get(position).getUuid());
+                            mInvisible.remove(position);
+                            snoozedAdapter.notifyItemRemoved(position);
+                            toggleBackgroundHint();
+                            return true;
+                        }
+                        return true;
+                    }
+                });
+                popupMenu.show();
+            }
+        });
+
         mAdapter.setOnItemClickListener(new TasksAdapter.ClickListener() {
             @Override
             public void onItemClick(int position, View v) {
@@ -281,6 +330,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                         if (itemId == R.id.deleteTaskOption) {
                             deleteTask(pos);
                             Toast.makeText(getContext(), "Task Permanently Deleted!", Toast.LENGTH_SHORT).show();
+                            mPos = -1;
                             return true;
                         } else if (itemId == R.id.markTaskDoneOption) {
                             markAsDone(vh);
@@ -425,7 +475,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         cardView.setVisibility(View.GONE);
         imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
         try {
-            imm.hideSoftInputFromWindow(getActivity().getCurrentFocus().getWindowToken(), 0);
+            imm.hideSoftInputFromWindow(getActivity().getWindow().getDecorView().getWindowToken(), 0);
         } catch (Exception e) {
             Log.e("MainActivity", e.getMessage());
         }
@@ -486,13 +536,19 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             item.setUuid(id);
             mInvisible.add(item);
         }
+        toggleBackgroundHint();
     }
 
     public void toggleBackgroundHint() {
-        if (mDataset == null || mDataset.isEmpty()) {
+        if (mDataset == null || mDataset.isEmpty() && (mInvisible == null || mInvisible.isEmpty())) {
             MainHintTV.setVisibility(View.VISIBLE);
         } else {
             MainHintTV.setVisibility(View.GONE);
+        }
+        if (mInvisible == null || mInvisible.isEmpty()) {
+            snoozedTv.setVisibility(View.GONE);
+        } else {
+            snoozedTv.setVisibility(View.VISIBLE);
         }
     }
 
@@ -567,7 +623,6 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
 
     interface SendMessageToLog {
         void sendDataToLog(DataModel item);
-
         void popFromLog();
     }
 
