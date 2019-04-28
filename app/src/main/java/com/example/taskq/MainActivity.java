@@ -178,26 +178,24 @@ public class MainActivity extends AppCompatActivity implements ActiveTask.SendMe
     }
 
     @Override
-    public void popFromLog() {
+    public void popFromLog(String type) {
         String tag = "android:switcher:" + R.id.view_pager + ":" + 1;
         LoggedTask loggedTask = (LoggedTask) getSupportFragmentManager().findFragmentByTag(tag);
+        if (type.compareToIgnoreCase("Productive") == 0) {
+            stats.set(PRODUCTIVE, stats.get(PRODUCTIVE) - 1);
+        } else if (type.compareToIgnoreCase("Chores") == 0) {
+            stats.set(CHORES, stats.get(CHORES) - 1);
+        } else if (type.compareToIgnoreCase("Recreation") == 0) {
+            stats.set(RECREATION, stats.get(RECREATION) - 1);
+        }
         loggedTask.popLoggedTask();
     }
 
     @Override
-    public void sendDataToActive(DataModel item, Boolean isUndo) {
+    public void sendDataToActive(DataModel item) {
         String tag = "android:switcher:" + R.id.view_pager + ":" + 0;
         ActiveTask activeTask = (ActiveTask) getSupportFragmentManager().findFragmentByTag(tag);
-        if (isUndo) {
-            if (item.getType().compareToIgnoreCase("Productive") == 0) {
 
-                stats.set(PRODUCTIVE, stats.get(PRODUCTIVE) - 1);
-            } else if (item.getType().compareToIgnoreCase("Chores") == 0) {
-                stats.set(CHORES, stats.get(CHORES) - 1);
-            } else if (item.getType().compareToIgnoreCase("Recreation") == 0) {
-                stats.set(RECREATION, stats.get(RECREATION) - 1);
-            }
-        }
         if (activeTask != null)
             activeTask.addTask(item);
     }

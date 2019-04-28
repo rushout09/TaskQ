@@ -154,6 +154,11 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         snoozedAdapter = new SnoozedAdapter(mInvisible);
         recyclerView2.setAdapter(snoozedAdapter);
         recyclerView.setAdapter(mAdapter);
+
+        recyclerView2.setNestedScrollingEnabled(false);
+        recyclerView.setNestedScrollingEnabled(false);
+
+
         ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
 
             DataModel item, item2;
@@ -168,7 +173,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                 item = mDataset.get(viewHolder.getAdapterPosition());
                 item2 = new DataModel(item);
                 markAsDone(viewHolder);
-                Snackbar snackbar = Snackbar.make(recyclerView, "Task Done!", Snackbar.LENGTH_SHORT);
+                Snackbar snackbar = Snackbar.make(recyclerView, "Task Done and added to snooze!", Snackbar.LENGTH_SHORT);
                 snackbar.setAction("UNDO", new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -177,7 +182,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                             cancelNotificationRequest(item.getUuid());
                             mInvisible.remove(item);
                         }
-                        SM.popFromLog();
+                        SM.popFromLog(item.getType());
                     }
                 });
                 snackbar.show();
@@ -273,8 +278,11 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
 
             }
 
+            DataModel item;
+            int pos;
             @Override
-            public void onItemLongClick(final int position, View v, RecyclerView.ViewHolder viewHolder) {
+            public void onItemLongClick(int position, View v, RecyclerView.ViewHolder viewHolder) {
+                pos = position;
                 PopupMenu popupMenu = new PopupMenu(getContext(), v);
                 popupMenu.inflate(R.menu.options_snoozed_task);
                 popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
@@ -282,8 +290,8 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                     public boolean onMenuItemClick(MenuItem menuItem) {
                         int itemId = menuItem.getItemId();
                         if (itemId == R.id.viewSnoozedGraphOption) {
-                            if (mInvisible.get(position).getRepeat().compareTo("Daily") == 0) {
-                                DataModel item = mInvisible.get(position);
+                            if (mInvisible.get(pos).getRepeat().compareTo("Daily") == 0) {
+                                DataModel item = mInvisible.get(pos);
                                 Intent intent = new Intent(getContext(), GraphActivity.class);
                                 intent.putExtra("currentStreak", item.getCurrentStreak());
                                 intent.putExtra("maxStreak", item.getMaxStreak());
@@ -294,10 +302,23 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                             }
                             return true;
                         } else if (itemId == R.id.deleteSnoozedTaskOption) {
-                            cancelNotificationRequest(mInvisible.get(position).getUuid());
-                            mInvisible.remove(position);
-                            snoozedAdapter.notifyItemRemoved(position);
+                            cancelNotificationRequest(mInvisible.get(pos).getUuid());
+                            item = mInvisible.get(pos);
+                            mInvisible.remove(pos);
+                            snoozedAdapter.notifyItemRemoved(pos);
                             toggleBackgroundHint();
+                            Snackbar snackbar = Snackbar.make(rootview, "Task Deleted Permanently.", Snackbar.LENGTH_SHORT);
+                            snackbar.setAction("Undo", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
+                                    UUID uuid = setNotificationRequest(item.getTitle(), item.getRemark(), item.getTargetTimestamp());
+                                    item.setUuid(uuid);
+                                    mInvisible.add(pos, item);
+                                    snoozedAdapter.notifyItemInserted(pos);
+                                    toggleBackgroundHint();
+                                }
+                            });
+                            snackbar.show();
                             return true;
                         }
                         return true;
@@ -316,6 +337,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
 
             private int pos;
             private RecyclerView.ViewHolder vh;
+            private DataModel item, item2;
             @Override
             public void onItemLongClick(final int position, View v, RecyclerView.ViewHolder viewHolder) {
                 pos = position;
@@ -328,13 +350,36 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                         buttonVisible();
                         int itemId = menuItem.getItemId();
                         if (itemId == R.id.deleteTaskOption) {
+                            item = mDataset.get(pos);
                             deleteTask(pos);
-                            Toast.makeText(getContext(), "Task Permanently Deleted!", Toast.LENGTH_SHORT).show();
+                            Snackbar snackbar = Snackbar.make(rootview, "Task Deleted Permanently.", Snackbar.LENGTH_SHORT);
+                            snackbar.setAction("Undo", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
+                                    addTask(item);
+                                }
+                            });
+                            snackbar.show();
                             mPos = -1;
                             return true;
                         } else if (itemId == R.id.markTaskDoneOption) {
+                            item = mDataset.get(vh.getAdapterPosition());
+                            item2 = new DataModel(item);
                             markAsDone(vh);
-                            Toast.makeText(getContext(), "Task done!", Toast.LENGTH_SHORT).show();
+                            Snackbar snackbar = Snackbar.make(recyclerView, "Task Done and added to snooze!", Snackbar.LENGTH_SHORT);
+                            snackbar.setAction("UNDO", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
+                                    addTask(item2);
+                                    if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
+                                        cancelNotificationRequest(item.getUuid());
+                                        mInvisible.remove(item);
+                                    }
+                                    SM.popFromLog(item.getType());
+                                }
+                            });
+                            snackbar.show();
+                            toggleBackgroundHint();
                             return true;
                         } else if (itemId == R.id.editTaskOption) {
                             mPos = pos;
@@ -535,6 +580,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
             UUID id = setNotificationRequest(item.getTitle(), item.getRemark(), item.getTargetTimestamp());
             item.setUuid(id);
             mInvisible.add(item);
+            snoozedAdapter.notifyItemInserted(mInvisible.size() - 1);
         }
         toggleBackgroundHint();
     }
@@ -623,7 +669,8 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
 
     interface SendMessageToLog {
         void sendDataToLog(DataModel item);
-        void popFromLog();
+
+        void popFromLog(String type);
     }
 
 }

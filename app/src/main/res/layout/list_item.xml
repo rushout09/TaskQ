@@ -8,7 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/cardview"
-        android:layout_margin="4dp"
+        android:layout_margin="2dp"
         app:cardCornerRadius="4dp"
         app:cardPreventCornerOverlap="true">
         <LinearLayout

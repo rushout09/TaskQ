@@ -143,7 +143,7 @@ public class LoggedTask extends Fragment {
                                 Toast.makeText(getContext(), "You cannot redo Repetitive tasks.", Toast.LENGTH_SHORT).show();
                                 return true;
                             }
-                            SM.sendDataToActive(item, false);
+                            SM.sendDataToActive(item);
                             Toast.makeText(getContext(), "Task Added to Todo", Toast.LENGTH_SHORT).show();
                             return true;
                         }
@@ -233,7 +233,7 @@ public class LoggedTask extends Fragment {
     }
 
     interface SendMessageToActive {
-        void sendDataToActive(DataModel item, Boolean isUndo);
+        void sendDataToActive(DataModel item);
     }
 
 }

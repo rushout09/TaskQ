@@ -5,4 +5,5 @@
     <color name="colorAccent">#D81B60</color>
     <color name="recycler_view_item_swipe_right_background">#FF0000</color>
     <color name="recycler_view_item_swipe_left_background">#00BB00</color>
+    <color name="snoozedTaskBG">#add8e6</color>
 </resources>

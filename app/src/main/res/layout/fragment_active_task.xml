@@ -12,7 +12,7 @@
         android:layout_above="@+id/scrollView"
         android:orientation="vertical">
 
-        <LinearLayout
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
@@ -20,20 +20,23 @@
             <android.support.v7.widget.RecyclerView
                 android:id="@+id/recycler_view"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true" />
 
             <TextView
                 android:id="@+id/snoozedTv"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="4dp"
+                android:layout_below="@+id/recycler_view"
                 android:text="Snoozed" />
 
             <android.support.v7.widget.RecyclerView
                 android:id="@+id/snoozedList"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-        </LinearLayout>
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/snoozedTv" />
+        </RelativeLayout>
     </ScrollView>
 
     <TextView

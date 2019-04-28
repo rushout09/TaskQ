@@ -1,6 +1,7 @@
 package com.example.taskq;
 
 
+import android.graphics.Color;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
@@ -36,6 +37,7 @@ public class SnoozedAdapter extends RecyclerView.Adapter<SnoozedAdapter.MyViewHo
 
     @Override
     public void onBindViewHolder(@NonNull SnoozedAdapter.MyViewHolder holder, int position) {
+        holder.cardView.setCardBackgroundColor(Color.argb(70, 135, 206, 250));
         holder.titleView.setText(dataSet.get(position).getTitle());
         if (dataSet.get(position).getRemark().isEmpty())
             holder.remarkView.setVisibility(View.GONE);

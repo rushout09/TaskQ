@@ -1,5 +1,6 @@
 package com.example.taskq;
 
+import android.graphics.Color;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
@@ -38,6 +39,7 @@ public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.MyViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull TasksAdapter.MyViewHolder holder, int position) {
+        holder.cardView.setCardBackgroundColor(Color.argb(70, 250, 106, 150));
         holder.titleView.setText(dataSet.get(position).getTitle());
         if (dataSet.get(position).getRemark().isEmpty())
             holder.remarkView.setVisibility(View.GONE);
