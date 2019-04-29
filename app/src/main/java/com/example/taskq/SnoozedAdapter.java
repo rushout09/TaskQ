@@ -46,8 +46,8 @@ public class SnoozedAdapter extends RecyclerView.Adapter<SnoozedAdapter.MyViewHo
             holder.remarkView.setText(dataSet.get(position).getRemark());
         }
         SimpleDateFormat formatter = new SimpleDateFormat("hh:mm a \nE (dd/MM)", Locale.getDefault());
-        String datestr = formatter.format(new Date(Long.parseLong(dataSet.get(position).getDoneTimestamp())));
-        holder.datetimeView.setText("Completed On " + datestr);
+        String datestr = formatter.format(new Date(Long.parseLong(dataSet.get(position).getTargetTimestamp())));
+        holder.datetimeView.setText("Complete By " + datestr);
         holder.repeatTv.setText("Repeat: " + dataSet.get(position).getRepeat() + "\nType: " + dataSet.get(position).getType());
     }
 

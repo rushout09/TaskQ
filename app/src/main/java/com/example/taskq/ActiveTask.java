@@ -151,6 +151,7 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
         recyclerView2.setLayoutManager(layoutManager2);
         recyclerView.setLayoutManager(layoutManager);
         mAdapter = new TasksAdapter(mDataset);
+        mAdapter.sortData();
         snoozedAdapter = new SnoozedAdapter(mInvisible);
         recyclerView2.setAdapter(snoozedAdapter);
         recyclerView.setAdapter(mAdapter);
@@ -385,9 +386,24 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
                             snackbar.show();
                             toggleBackgroundHint();
                             return true;
-                        } else if (itemId == R.id.editTaskOption) {
-                            mPos = pos;
-                            cardVisible(mPos);
+                        } else if (itemId == R.id.snoozeTaskOption) {
+                            item = mDataset.get(vh.getAdapterPosition());
+                            item2 = new DataModel(item);
+                            moveToSnooze(vh);
+                            Snackbar snackbar = Snackbar.make(recyclerView, "Task moved to Snooze!", Snackbar.LENGTH_SHORT);
+                            snackbar.setAction("UNDO", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
+                                    addTask(item2);
+                                    if (item.getRepeat().compareToIgnoreCase("Once") != 0) {
+                                        cancelNotificationRequest(item.getUuid());
+                                        mInvisible.remove(item);
+                                        snoozedAdapter.notifyItemRemoved(mInvisible.size());
+                                    }
+                                }
+                            });
+                            snackbar.show();
+                            toggleBackgroundHint();
                             return true;
                         } else if (itemId == R.id.viewGraphOption) {
                             if (mDataset.get(pos).getRepeat().compareTo("Daily") == 0) {
@@ -614,6 +630,26 @@ public class ActiveTask extends Fragment implements AdapterView.OnItemSelectedLi
     public void deleteTask(int pos) {
         cancelNotificationRequest(mDataset.get(pos).getUuid());
         mAdapter.deleteItem(pos);
+        toggleBackgroundHint();
+    }
+
+    public void moveToSnooze(RecyclerView.ViewHolder viewHolder) {
+        int position = viewHolder.getAdapterPosition();
+        DataModel item = mDataset.get(position);
+        deleteTask(position);
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+        calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
+        calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1);
+        calendar.set(Calendar.HOUR_OF_DAY, calendar.get(Calendar.HOUR_OF_DAY));
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        item.setTargetTimestamp(String.valueOf(calendar.getTimeInMillis()));
+        UUID id = setNotificationRequest(item.getTitle(), item.getRemark(), item.getTargetTimestamp());
+        item.setUuid(id);
+        mInvisible.add(item);
+        snoozedAdapter.notifyItemInserted(mInvisible.size() - 1);
         toggleBackgroundHint();
     }
 

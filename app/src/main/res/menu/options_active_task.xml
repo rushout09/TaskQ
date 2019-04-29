@@ -8,8 +8,8 @@
         android:id="@+id/markTaskDoneOption"
         android:title="Mark as Done" />
     <item
-        android:id="@+id/editTaskOption"
-        android:title="Edit Task" />
+        android:id="@+id/snoozeTaskOption"
+        android:title="Snooze for a day" />
     <item
         android:id="@+id/viewGraphOption"
         android:title="View Streak Graph" />
